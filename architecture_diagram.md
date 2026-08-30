@@ -1,64 +1,106 @@
 # Production Analytics Architecture
 
-This diagram outlines how the analytical system will operate in production on a daily basis.
+## Overview
+
+This diagram describes the end-to-end data pipeline that should power the collections analytics system in production. Every layer has defined contracts, quality gates, and monitoring hooks.
 
 ```mermaid
 flowchart TD
-    %% Data Sources
-    subgraph Raw [Raw Data Sources]
-        A1(Dialer / Telephony)
-        A2(WhatsApp / SMS APIs)
-        A3(Field App DB)
-        A4(Core Banking / Payments)
+    %% ── RAW SOURCES ──────────────────────────────────────────
+    subgraph RAW["🗄️ Raw Sources (Event Streams)"]
+        direction LR
+        R1["Telephony APIs\n(Twilio / Exotel / Knowlarity)"]
+        R2["WhatsApp / SMS\nProviders"]
+        R3["Field App\n(Mobile DB Sync)"]
+        R4["Core Banking\n(Payments / Accounts)"]
+        R5["CRM / Agent\nLogin System"]
     end
 
-    %% Staging & Ingestion
-    subgraph Staging [Staging Layer - S3 / Data Lake]
-        B1[(Raw Events)]
-        B2[(Raw Accounts)]
-        B3[(Raw Agents)]
+    %% ── STAGING LAYER ────────────────────────────────────────
+    subgraph STAGING["⚙️ Staging Layer  (dbt / Spark Streaming)"]
+        direction TB
+        S1["stg_payments\n• Dedup by payment_reference\n• Flag REVERSED, PENDING\n• Schema contract enforced"]
+        S2["stg_calls\n• Normalize timezone → UTC\n• Derive hour_ist\n• Dedup same account+timestamp"]
+        S3["stg_agents\n• Entity resolution\n• Canonical agent_id per employee_code"]
+        S4["stg_dispositions\n• Unify legacy + v1 + v2 codes\n• Tag is_rpc, is_ptp"]
+        S5["stg_borrowers\n• Dedup by borrower_id\n• Latest updated_at wins"]
     end
 
-    %% Data Pipeline & Transformation
-    subgraph Clean [Processing Engine - dbt / Spark]
-        C1[Deduplication & Entity Resolution]
-        C2[Timezone Normalization to UTC]
-        C3[Late-Arriving Data Handler]
+    %% ── CLEAN LAYER ──────────────────────────────────────────
+    subgraph CLEAN["✅ Clean Layer (dbt Models — daily refresh)"]
+        C1["dim_accounts\nPK: account_id\nSCD Type 2 for DPD changes"]
+        C2["dim_agents\nPK: canonical_agent_id\nTenure calculated"]
+        C3["fact_payments\nPK: payment_reference\nStatus = SUCCESS only"]
+        C4["fact_calls\nPK: call_id\nTimezone-normalized"]
+        C5["fact_dispositions\nPK: disposition_id\nNormalized codes"]
     end
 
-    %% Golden Dataset Layer
-    subgraph Golden [Golden Dataset - Data Warehouse]
-        D1[(dim_accounts)]
-        D2[(dim_agents)]
-        D3[(fact_payments)]
-        D4[(fact_communications)]
-    end
-    
-    %% Serving Layer
-    subgraph Serving [Metrics & Features]
-        E1[Aggregated Monthly Metrics]
-        E2[Agent Performance Features]
-        E3[Anomaly Detection Module]
+    %% ── GOLDEN LAYER ─────────────────────────────────────────
+    subgraph GOLDEN["🏆 Golden Layer (Analytical Tables)"]
+        G1["golden_monthly_metrics\nRecovery Rate, Contact Rate,\nPTP Rate, Recovery/Agent-Hour"]
+        G2["golden_channel_performance\nRecovery by channel, ROI\nAttribution window: 30 days"]
+        G3["golden_agent_performance\nRPC rate, PTP rate by agent\nControlled for DPD bucket"]
     end
 
-    %% Consumption
-    subgraph Dashboard [Consumption]
-        F1((CEO Executive Dashboard))
-        F2((Operations Dashboard))
+    %% ── FEATURE / METRICS LAYER ──────────────────────────────
+    subgraph METRICS["📊 Metrics & Feature Layer"]
+        M1["Metric Store\n(dbt Metrics / Cube.dev)\nSingle source of truth definitions"]
+        M2["Anomaly Detection\nZ-score on daily recovery\nAlert if > 2σ deviation"]
+        M3["Data Quality Checks\nGreat Expectations / dbt tests\nNull %, uniqueness, ref integrity"]
     end
 
-    Raw -->|Batch / Streaming| Staging
-    Staging --> Clean
-    Clean --> Golden
-    Golden --> Serving
-    Serving --> Dashboard
+    %% ── CONSUMPTION ──────────────────────────────────────────
+    subgraph DASH["🖥️ Consumption"]
+        D1["CEO Executive Dashboard\n(Metabase / Superset)\n60-second brief"]
+        D2["Ops Dashboard\nAgent-level / Campaign-level\nDaily refresh"]
+        D3["Ad-hoc Analysis\nJupyter + DuckDB\nData Science team"]
+    end
 
-    %% Error Handling
-    Clean -.->|Rejected Records| G1[Data Quality Logs]
+    %% ── CONNECTIONS ──────────────────────────────────────────
+    RAW --> STAGING
+    STAGING --> CLEAN
+    CLEAN --> GOLDEN
+    GOLDEN --> METRICS
+    METRICS --> DASH
+
+    %% ── SIDE: ERROR HANDLING ─────────────────────────────────
+    STAGING -.->|"Rejected records\n(DQ failures)"| ERR["❌ Dead Letter Queue\nSlack alert → Data team"]
+    METRICS -.->|"Anomaly alert"| ALERT["🔔 PagerDuty / Slack\nAuto-ticket created"]
 ```
 
-## Production Design Notes
-- **Data Contracts**: Upstream APIs must enforce schema validation. Any schema changes (like `schema_version` in telephony) trigger alerts rather than silently breaking downstream.
-- **Primary Keys & Deduplication**: Incremental processing models will upsert on primary keys (`payment_reference`, `borrower_id`) to naturally handle retries and duplicates.
-- **Timezones**: All events are normalized to UTC at the staging layer. Dashboards apply local timezone formatting on the client side.
-- **Monitoring**: Anomaly detection runs on the `Aggregated Monthly Metrics` layer to catch sudden drops in the denominator (active accounts) or spikes in duplicate payment hashes.
+---
+
+## Key Design Decisions
+
+### Data Contracts
+- Each source system must publish a JSON Schema for every event type.
+- Schema version changes (`v1` → `v2`) must bump a `schema_version` field **and** trigger a mapping update in `stg_dispositions` before going live.
+- Payment events must include `payment_reference` as a **stable, idempotent** identifier. Retries must reuse the same reference.
+
+### Primary Keys
+| Table | Primary Key | Uniqueness Guarantee |
+|-------|-------------|---------------------|
+| `fact_payments` | `payment_reference` | Enforced via UPSERT |
+| `fact_calls` | `call_id` | Enforced via UPSERT |
+| `dim_agents` | `canonical_agent_id` (from `employee_code`) | Surrogate key |
+| `dim_accounts` | `account_id` | Source system guarantee |
+| `fact_dispositions` | `disposition_id` | Enforced via UPSERT |
+
+### Incremental Processing & Late-Arriving Data
+- All `fact_*` tables use **incremental dbt models** partitioned by `event_at` date.
+- **Late-arriving window**: 7 days. Any event arriving with `event_at` older than 7 days triggers a **targeted backfill** of that partition only.
+- Payments are considered final after **3 days** post-event (reversal window). `REVERSED` status events arriving within 3 days update the original record.
+
+### Metric Definitions (Source of Truth)
+| Metric | Numerator | Denominator | Notes |
+|--------|-----------|-------------|-------|
+| **Recovery Rate** | Unique accounts with SUCCESS payment | All accounts in `daily_targeting` for that month | Use targeting table, not payments table, for denominator |
+| **Contact Rate (RPC)** | Calls with `is_rpc = TRUE` disposition | Unique accounts with ≥1 call attempt | Per account, not per call |
+| **PTP Rate** | Accounts with `PTP_MADE` disposition | Accounts with RPC contact | Only meaningful relative to contacted accounts |
+| **PTP Kept Rate** | `promises_to_pay` with `status = 'KEPT'` | All PTPs made in same month | Measures follow-through quality |
+| **Recovery per Agent-Hour** | Total recovered (₹) | Agent hours from `agent_sessions` (login→logout) | Exclude sessions >12h (likely forgot to log out) |
+
+### Monitoring & Anomaly Detection
+- **Daily Z-score alert**: If total daily recovery deviates > 2σ from the 30-day rolling average, auto-create a Slack alert and ticket.
+- **Duplicate rate monitor**: If `COUNT(*) / COUNT(DISTINCT payment_reference) > 1.05` in any batch, halt ingestion and alert.
+- **Timezone sentinel**: If any new vendor sends >5% of calls in a new timezone value, flag for mapping update.

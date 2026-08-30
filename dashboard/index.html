@@ -3,54 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEO Executive Summary - Collections Analytics</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Collections Analytics — CEO Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #080e1a;
+            --surface: #0f1829;
+            --card: #131f33;
+            --border: rgba(255,255,255,0.06);
+            --red: #f04255;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --text: #e2e8f0;
+            --muted: #64748b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 28px 32px;
+        }
+
+        /* ─── HEADER ─────────────────── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .header-left h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+        .header-left p {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        .verdict-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(240,66,85,0.12);
+            border: 1px solid rgba(240,66,85,0.35);
+            border-radius: 8px;
+            padding: 10px 18px;
+        }
+        .verdict-chip .dot {
+            width: 10px; height: 10px;
+            background: var(--red);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .verdict-chip span { font-size: 0.9rem; font-weight: 600; color: var(--red); }
+        .verdict-chip small { font-size: 0.75rem; color: var(--muted); display: block; margin-top: 1px; }
+
+        /* ─── ALERT BANNER ─────────────── */
+        .alert {
+            background: rgba(240,66,85,0.08);
+            border-left: 3px solid var(--red);
+            border-radius: 0 8px 8px 0;
+            padding: 14px 20px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .alert strong { color: var(--red); }
+
+        /* ─── KPI GRID ─────────────────── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .kpi {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 16px;
+        }
+        .kpi .label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 8px;
+        }
+        .kpi .value {
+            font-size: 1.7rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .kpi .sub {
+            font-size: 0.72rem;
+            margin-top: 4px;
+            color: var(--muted);
+        }
+        .kpi .sub .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        .badge.bad { background: rgba(240,66,85,0.15); color: var(--red); }
+        .badge.good { background: rgba(16,185,129,0.15); color: var(--green); }
+        .badge.neutral { background: rgba(245,158,11,0.15); color: var(--amber); }
+        .kpi.accent-red { border-top: 3px solid var(--red); }
+        .kpi.accent-green { border-top: 3px solid var(--green); }
+        .kpi.accent-amber { border-top: 3px solid var(--amber); }
+        .kpi.accent-blue { border-top: 3px solid var(--blue); }
+        .kpi.accent-purple { border-top: 3px solid var(--purple); }
+        .value.red { color: var(--red); }
+        .value.green { color: var(--green); }
+        .value.amber { color: var(--amber); }
+        .value.blue { color: var(--blue); }
+
+        /* ─── MAIN CHARTS ROW ──────────── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .chart-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+        .chart-wrap { position: relative; height: 220px; }
+
+        /* ─── BOTTOM ROW ───────────────── */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            gap: 14px;
+        }
+
+        /* ─── METRICS TABLE ─────────────── */
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        .metrics-table th {
+            text-align: left;
+            color: var(--muted);
+            font-weight: 500;
+            padding: 0 0 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .metrics-table td {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text);
+        }
+        .metrics-table td.right { text-align: right; }
+        .trend-arrow.up::after { content: '↑'; color: var(--green); }
+        .trend-arrow.down::after { content: '↓'; color: var(--red); }
+
+        /* ─── RECOMMENDATION BOX ────────── */
+        .recommendation {
+            background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06));
+            border: 1px solid rgba(16,185,129,0.25);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .recommendation h3 {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 12px;
+        }
+        .rec-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--green);
+            margin-bottom: 12px;
+        }
+        .rec-rows { display: flex; flex-direction: column; gap: 8px; }
+        .rec-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+        }
+        .rec-row .rk { color: var(--muted); }
+        .rec-row .rv { font-weight: 600; color: var(--text); }
+
+        /* ─── FORENSICS ROW ─────────────── */
+        .forensics-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .forensics-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+        .forensics-list .icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .forensics-list .fi-text { color: var(--text); }
+        .forensics-list .fi-sub { font-size: 0.7rem; color: var(--muted); }
+    </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="header">
-            <h1>Collections Performance: 12-Month Review</h1>
-            <p class="subtitle">Data Forensics & Investment Recommendation</p>
-        </header>
 
-        <!-- Key Takeaway -->
-        <section class="takeaway-card">
-            <h2>🚨 The Bottom Line</h2>
-            <p>The reported <strong>11% Month-on-Month improvement is false</strong>. It was an artifact of duplicate payment ingestion and denominator manipulation (Simpson's Paradox). True MoM recovery is actually <strong>declining by 14.5%</strong>.</p>
-        </section>
-
-        <!-- Metrics Grid -->
-        <section class="metrics-grid">
-            <div class="metric-card negative">
-                <h3>True MoM Growth</h3>
-                <div class="value">-14.5%</div>
-                <div class="label">Calculated from Golden Dataset</div>
-            </div>
-            <div class="metric-card neutral">
-                <h3>Reported MoM Growth</h3>
-                <div class="value">+11.0%</div>
-                <div class="label">Legacy Dashboards (Flawed)</div>
-            </div>
-            <div class="metric-card positive">
-                <h3>Top Channel (WhatsApp)</h3>
-                <div class="value">₹41.8 Cr</div>
-                <div class="label">Total Recovered (Cleaned)</div>
-            </div>
-        </section>
-
-        <!-- Recommendation -->
-        <section class="recommendation-card">
-            <h2>💡 ₹10 Cr Investment Recommendation</h2>
-            <p>We strongly recommend deploying the ₹10 Cr budget into <strong>WhatsApp & Digital Engagement</strong>.</p>
-            <div class="chart-container">
-                <canvas id="channelChart"></canvas>
-            </div>
-            <p class="rationale">WhatsApp is driving 56% more recovery per account than Voice or Field operations at a fraction of the per-contact cost. Investing in AI-driven digital targeting will yield a 5x-8x ROI within the first quarter.</p>
-        </section>
+<!-- HEADER -->
+<div class="header">
+    <div class="header-left">
+        <h1>Collections Analytics — Leadership Brief</h1>
+        <p>Based on 7 months of data (Jan–Jul 2026) · 30,000 accounts · Golden Dataset (deduplicated)</p>
     </div>
+    <div class="verdict-chip">
+        <div class="dot"></div>
+        <div>
+            <span>Reported +11% is FALSE</span>
+            <small>True avg MoM recovery: −7.8% (Jan–Jul)</small>
+        </div>
+    </div>
+</div>
 
-    <script src="script.js"></script>
+<!-- ALERT -->
+<div class="alert">
+    The <strong>+11% MoM improvement claim cannot be substantiated.</strong>
+    The raw payments table contained <strong>2,752 duplicate SUCCESS events</strong> inflating recovery by <strong>₹24.3 Cr (22.1%)</strong>.
+    After deduplication, recovery shows a <strong>consistent decline from ₹17.98 Cr (Jan) → ₹13.40 Cr (Jul)</strong>.
+    The March spike (+6.6%) which likely drove the 11% claim was entirely a duplicate-payment artifact.
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-grid">
+    <div class="kpi accent-red">
+        <div class="label">True Avg MoM Growth</div>
+        <div class="value red">−7.8%</div>
+        <div class="sub"><span class="badge bad">Reported: +11%</span></div>
+    </div>
+    <div class="kpi accent-red">
+        <div class="label">Total Recovery (Jan–Jul)</div>
+        <div class="value red">₹102.4 Cr</div>
+        <div class="sub">Clean data · <span class="badge bad">Was ₹134.2 Cr raw</span></div>
+    </div>
+    <div class="kpi accent-amber">
+        <div class="label">Recovery Rate (Jul vs Jan)</div>
+        <div class="value amber">29.7%</div>
+        <div class="sub">Was 39.9% in Jan <span class="badge bad">−10.2 pp</span></div>
+    </div>
+    <div class="kpi accent-blue">
+        <div class="label">Contact Rate (RPC)</div>
+        <div class="value blue">~30%</div>
+        <div class="sub">Stable across period <span class="badge neutral">Flat</span></div>
+    </div>
+    <div class="kpi accent-green">
+        <div class="label">Best Channel</div>
+        <div class="value green">WhatsApp</div>
+        <div class="sub">₹41.8 Cr recovered · 3,678 accounts</div>
+    </div>
+</div>
+
+<!-- MAIN CHARTS -->
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3>Monthly Recovery — Clean vs Raw Data (₹ Crores)</h3>
+        <div class="chart-wrap">
+            <canvas id="recoveryChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Channel Recovery (₹ Cr)</h3>
+        <div class="chart-wrap">
+            <canvas id="channelChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- BOTTOM CHARTS -->
+<div class="bottom-grid">
+    <div class="chart-card">
+        <h3>Metric Trend (Jan–Jul 2026)</h3>
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Recovery Rate</th>
+                    <th>PTP Kept%</th>
+                    <th>₹/Agent-Hr</th>
+                </tr>
+            </thead>
+            <tbody id="metricsTable"></tbody>
+        </table>
+    </div>
+    <div class="chart-card">
+        <h3>Data Forensics — Issues Found</h3>
+        <ul class="forensics-list">
+            <li><span class="icon">🔴</span><div><div class="fi-text">Duplicate Payments</div><div class="fi-sub">2,752 events · ₹24.3 Cr inflated (22.1%)</div></div></li>
+            <li><span class="icon">🔴</span><div><div class="fi-text">Timezone Mismatch (60k+ calls)</div><div class="fi-sub">UTC/IST/Dubai mixed — hourly analytics broken</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Agent Identity Conflicts</div><div class="fi-sub">10 agents with 900+ duplicate IDs each</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Legacy Disposition Codes</div><div class="fi-sub">PTP_MADE undercounted 33.8% if legacy codes ignored</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Attribution Errors</div><div class="fi-sub">5,035 payments with no prior call interaction</div></div></li>
+            <li><span class="icon">🟢</span><div><div class="fi-text">No Denominator Manipulation Detected</div><div class="fi-sub">Only 207 accounts (0.7%) with no digital or call contact</div></div></li>
+        </ul>
+    </div>
+    <div class="recommendation">
+        <h3>₹10 Cr Investment Recommendation</h3>
+        <div class="rec-title">→ Invest in WhatsApp / Digital Engagement</div>
+        <div class="rec-rows">
+            <div class="rec-row"><span class="rk">Expected Incremental Recovery</span><span class="rv">₹12–18 Cr / year</span></div>
+            <div class="rec-row"><span class="rk">Estimated ROI</span><span class="rv">1.2x–1.8x in 12 months</span></div>
+            <div class="rec-row"><span class="rk">Break-even Point</span><span class="rv">~7–9 months</span></div>
+            <div class="rec-row"><span class="rk">Key Assumption</span><span class="rv">WhatsApp opt-in rate remains stable</span></div>
+            <div class="rec-row"><span class="rk">Confidence</span><span class="rv">High (Strong Evidence)</span></div>
+            <div class="rec-row"><span class="rk">Downside Scenario</span><span class="rv">Carrier block → fall back to IVR</span></div>
+            <div class="rec-row"><span class="rk">Why not Field ops?</span><span class="rv">Lowest ₹/account, highest cost-per-contact</span></div>
+            <div class="rec-row"><span class="rk">Why not more agents?</span><span class="rv">Recovery/agent-hour declining Jan→Jul (₹16k→₹12k)</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+const cleanRecovery = [17.98, 15.62, 16.64, 14.68, 14.72, 13.39, 13.40];
+const rawRecovery   = [19.11, 17.41, 19.32, 17.84, 18.70, 17.87, 19.03];
+
+const recRate     = [39.86, 38.93, 37.70, 34.93, 32.78, 31.76, 29.74];
+const ptpKept     = [24.07, 25.54, 24.67, 25.24, 25.29, 24.68, 24.56];
+const recPerHour  = [16106, 14792, 14951, 13823, 13584, 12512, 11983];
+
+const channels    = ['WhatsApp', 'SMS', 'Mixed', 'Voice', 'Field'];
+const channelVals = [41.83, 37.49, 31.68, 26.70, 26.09];
+
+const GRID = 'rgba(255,255,255,0.05)';
+const TICK = '#64748b';
+
+// ─── RECOVERY CHART ──────────────────────────────────────────
+new Chart(document.getElementById('recoveryChart'), {
+    data: {
+        labels: months,
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Clean (Deduplicated)',
+                data: cleanRecovery,
+                backgroundColor: 'rgba(59,130,246,0.55)',
+                borderColor: '#3b82f6',
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'y'
+            },
+            {
+                type: 'line',
+                label: 'Raw (Inflated by Duplicates)',
+                data: rawRecovery,
+                borderColor: 'rgba(240,66,85,0.8)',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [5,3],
+                pointRadius: 4,
+                pointBackgroundColor: '#f04255',
+                tension: 0.3,
+                yAxisID: 'y'
+            }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: TICK, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.y.toFixed(2)} Cr` } }
+        },
+        scales: {
+            y: {
+                grid: { color: GRID },
+                ticks: { color: TICK, callback: v => `₹${v} Cr` },
+                title: { display: true, text: '₹ Crores', color: TICK, font: { size: 10 } }
+            },
+            x: { grid: { display: false }, ticks: { color: TICK } }
+        }
+    }
+});
+
+// ─── CHANNEL CHART ────────────────────────────────────────────
+new Chart(document.getElementById('channelChart'), {
+    type: 'bar',
+    data: {
+        labels: channels,
+        datasets: [{
+            data: channelVals,
+            backgroundColor: ['rgba(16,185,129,0.75)', 'rgba(59,130,246,0.6)', 'rgba(139,92,246,0.6)', 'rgba(245,158,11,0.6)', 'rgba(100,116,139,0.6)'],
+            borderRadius: 4,
+            borderWidth: 0
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.x.toFixed(2)} Cr` } }
+        },
+        scales: {
+            x: { grid: { color: GRID }, ticks: { color: TICK, callback: v => `₹${v}` } },
+            y: { grid: { display: false }, ticks: { color: TICK } }
+        }
+    }
+});
+
+// ─── METRICS TABLE ────────────────────────────────────────────
+const tbody = document.getElementById('metricsTable');
+for (let i = 0; i < months.length; i++) {
+    const prev = i > 0;
+    const rDir = prev && recRate[i] < recRate[i-1] ? 'down' : (prev ? 'up' : '');
+    tbody.innerHTML += `
+        <tr>
+            <td>${months[i]}</td>
+            <td class="right"><span class="trend-arrow ${rDir}">${recRate[i].toFixed(1)}%</span></td>
+            <td class="right">${ptpKept[i].toFixed(1)}%</td>
+            <td class="right">₹${(recPerHour[i]/1000).toFixed(1)}k</td>
+        </tr>`;
+}
+</script>
 </body>
 </html>

@@ -1,0 +1,194 @@
+{
+  "monthly_metrics": [
+    {
+      "month": "2026-01",
+      "total_recovery_inr": 179788335.74999973,
+      "total_recovery_cr": 17.978833574999975,
+      "accounts_recovered": 2285,
+      "active_accounts_in_portfolio": 5732,
+      "recovery_rate_pct": 39.86,
+      "contact_rate_rpc_pct": 29.74,
+      "ptp_rate_pct": 34.43,
+      "ptp_kept_rate_pct": 24.07,
+      "recovery_per_account_inr": 78682.0,
+      "recovery_per_agent_hour_inr": 16106.0,
+      "total_call_hours": 1725.6008333333334,
+      "agent_hours_logged": 11162.578611111103,
+      "ptps_made": 2522,
+      "ptps_kept": 607.0,
+      "mom_recovery_pct": 0.0
+    },
+    {
+      "month": "2026-02",
+      "total_recovery_inr": 156158361.53999972,
+      "total_recovery_cr": 15.615836153999972,
+      "accounts_recovered": 2009,
+      "active_accounts_in_portfolio": 5160,
+      "recovery_rate_pct": 38.93,
+      "contact_rate_rpc_pct": 29.87,
+      "ptp_rate_pct": 33.68,
+      "ptp_kept_rate_pct": 25.54,
+      "recovery_per_account_inr": 77729.0,
+      "recovery_per_agent_hour_inr": 14792.0,
+      "total_call_hours": 1577.6758333333332,
+      "agent_hours_logged": 10557.011388888897,
+      "ptps_made": 2220,
+      "ptps_kept": 567.0,
+      "mom_recovery_pct": -13.14321872518921
+    },
+    {
+      "month": "2026-03",
+      "total_recovery_inr": 166416406.1500002,
+      "total_recovery_cr": 16.64164061500002,
+      "accounts_recovered": 2136,
+      "active_accounts_in_portfolio": 5666,
+      "recovery_rate_pct": 37.7,
+      "contact_rate_rpc_pct": 30.58,
+      "ptp_rate_pct": 34.38,
+      "ptp_kept_rate_pct": 24.67,
+      "recovery_per_account_inr": 77910.0,
+      "recovery_per_agent_hour_inr": 14951.0,
+      "total_call_hours": 1729.4480555555556,
+      "agent_hours_logged": 11130.820000000018,
+      "ptps_made": 2509,
+      "ptps_kept": 619.0,
+      "mom_recovery_pct": 6.5690011785714875
+    },
+    {
+      "month": "2026-04",
+      "total_recovery_inr": 146805360.32999966,
+      "total_recovery_cr": 14.680536032999965,
+      "accounts_recovered": 1951,
+      "active_accounts_in_portfolio": 5585,
+      "recovery_rate_pct": 34.93,
+      "contact_rate_rpc_pct": 30.06,
+      "ptp_rate_pct": 32.32,
+      "ptp_kept_rate_pct": 25.24,
+      "recovery_per_account_inr": 75246.0,
+      "recovery_per_agent_hour_inr": 13823.0,
+      "total_call_hours": 1676.62,
+      "agent_hours_logged": 10620.321666666667,
+      "ptps_made": 2492,
+      "ptps_kept": 629.0,
+      "mom_recovery_pct": -11.784322395668156
+    },
+    {
+      "month": "2026-05",
+      "total_recovery_inr": 147159166.4900002,
+      "total_recovery_cr": 14.715916649000018,
+      "accounts_recovered": 1901,
+      "active_accounts_in_portfolio": 5800,
+      "recovery_rate_pct": 32.78,
+      "contact_rate_rpc_pct": 30.8,
+      "ptp_rate_pct": 32.44,
+      "ptp_kept_rate_pct": 25.29,
+      "recovery_per_account_inr": 77411.0,
+      "recovery_per_agent_hour_inr": 13584.0,
+      "total_call_hours": 1715.7086111111112,
+      "agent_hours_logged": 10833.12916666666,
+      "ptps_made": 2507,
+      "ptps_kept": 634.0,
+      "mom_recovery_pct": 0.24100357044540832
+    },
+    {
+      "month": "2026-06",
+      "total_recovery_inr": 133915991.32,
+      "total_recovery_cr": 13.391599132,
+      "accounts_recovered": 1758,
+      "active_accounts_in_portfolio": 5535,
+      "recovery_rate_pct": 31.76,
+      "contact_rate_rpc_pct": 29.48,
+      "ptp_rate_pct": 33.14,
+      "ptp_kept_rate_pct": 24.68,
+      "recovery_per_account_inr": 76175.0,
+      "recovery_per_agent_hour_inr": 12512.0,
+      "total_call_hours": 1654.25,
+      "agent_hours_logged": 10703.00861111112,
+      "ptps_made": 2439,
+      "ptps_kept": 602.0,
+      "mom_recovery_pct": -8.999218659545816
+    },
+    {
+      "month": "2026-07",
+      "total_recovery_inr": 133967700.08000004,
+      "total_recovery_cr": 13.396770008000004,
+      "accounts_recovered": 1685,
+      "active_accounts_in_portfolio": 5666,
+      "recovery_rate_pct": 29.74,
+      "contact_rate_rpc_pct": 29.34,
+      "ptp_rate_pct": 32.73,
+      "ptp_kept_rate_pct": 24.56,
+      "recovery_per_account_inr": 79506.0,
+      "recovery_per_agent_hour_inr": 11983.0,
+      "total_call_hours": 1702.6952777777778,
+      "agent_hours_logged": 11180.158611111117,
+      "ptps_made": 2626,
+      "ptps_kept": 645.0,
+      "mom_recovery_pct": 0.038612834427276255
+    }
+  ],
+  "channel_perf": [
+    {
+      "channel": "WHATSAPP",
+      "accounts_recovered": 3678,
+      "recovered_cr": 41.82570353000001,
+      "avg_payment": 75158.0
+    },
+    {
+      "channel": "SMS",
+      "accounts_recovered": 3363,
+      "recovered_cr": 37.48891804000005,
+      "avg_payment": 75203.0
+    },
+    {
+      "channel": "MIXED",
+      "accounts_recovered": 2921,
+      "recovered_cr": 31.675250977999966,
+      "avg_payment": 75113.0
+    },
+    {
+      "channel": "VOICE",
+      "accounts_recovered": 2562,
+      "recovered_cr": 26.704805639000007,
+      "avg_payment": 73852.0
+    },
+    {
+      "channel": "FIELD",
+      "accounts_recovered": 2434,
+      "recovered_cr": 26.09335934100001,
+      "avg_payment": 74830.0
+    }
+  ],
+  "whatsapp_funnel": [
+    {
+      "event_type": "SENT",
+      "cnt": 10244,
+      "accts": 8635
+    },
+    {
+      "event_type": "PAYMENT_CLICK",
+      "cnt": 10180,
+      "accts": 8505
+    },
+    {
+      "event_type": "FAILED",
+      "cnt": 10114,
+      "accts": 8518
+    },
+    {
+      "event_type": "REPLIED",
+      "cnt": 10035,
+      "accts": 8434
+    },
+    {
+      "event_type": "READ",
+      "cnt": 10022,
+      "accts": 8387
+    },
+    {
+      "event_type": "DELIVERED",
+      "cnt": 10005,
+      "accts": 8401
+    }
+  ]
+}

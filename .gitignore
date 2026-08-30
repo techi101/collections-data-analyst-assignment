@@ -1,0 +1,16 @@
+*.duckdb
+*.pyc
+__pycache__/
+venv/
+.venv/
+*.log
+.DS_Store
+*.egg-info/
+dist/
+build/
+explore.py
+analysis.py
+forensics_and_pipeline.py
+build_golden.py
+forensics_summary.json
+analysis_findings.json
