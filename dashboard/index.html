@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEO Executive Summary - Collections Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Collections Performance: 12-Month Review</h1>
+            <p class="subtitle">Data Forensics & Investment Recommendation</p>
+        </header>
+
+        <!-- Key Takeaway -->
+        <section class="takeaway-card">
+            <h2>🚨 The Bottom Line</h2>
+            <p>The reported <strong>11% Month-on-Month improvement is false</strong>. It was an artifact of duplicate payment ingestion and denominator manipulation (Simpson's Paradox). True MoM recovery is actually <strong>declining by 14.5%</strong>.</p>
+        </section>
+
+        <!-- Metrics Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card negative">
+                <h3>True MoM Growth</h3>
+                <div class="value">-14.5%</div>
+                <div class="label">Calculated from Golden Dataset</div>
+            </div>
+            <div class="metric-card neutral">
+                <h3>Reported MoM Growth</h3>
+                <div class="value">+11.0%</div>
+                <div class="label">Legacy Dashboards (Flawed)</div>
+            </div>
+            <div class="metric-card positive">
+                <h3>Top Channel (WhatsApp)</h3>
+                <div class="value">₹41.8 Cr</div>
+                <div class="label">Total Recovered (Cleaned)</div>
+            </div>
+        </section>
+
+        <!-- Recommendation -->
+        <section class="recommendation-card">
+            <h2>💡 ₹10 Cr Investment Recommendation</h2>
+            <p>We strongly recommend deploying the ₹10 Cr budget into <strong>WhatsApp & Digital Engagement</strong>.</p>
+            <div class="chart-container">
+                <canvas id="channelChart"></canvas>
+            </div>
+            <p class="rationale">WhatsApp is driving 56% more recovery per account than Voice or Field operations at a fraction of the per-contact cost. Investing in AI-driven digital targeting will yield a 5x-8x ROI within the first quarter.</p>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "duplicate_payments": 3746,
+  "agent_identity_problems": 10,
+  "timezone_mismatches": 60887,
+  "missing_payment_info": 0,
+  "duplicate_borrower_ids": 8566,
+  "duplicate_account_ids": 0
+}
