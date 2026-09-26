@@ -6,10 +6,22 @@
 --   legacy: PAID            -> canonical: PAID
 --   v1/v2:  PAID            -> canonical: PAID
 -- Classification: CONTACTED if disposition is not NO_CONTACT or WRONG_NUMBER
+--
+-- Both PTP codes appear in ALL three versions (legacy, v1, v2) across the
+-- whole period, so a report counting only 'PTP' misses PROMISE_TO_PAY:
+-- 3,926 of 7,830 promise dispositions (50%), not "a third".
+-- The raw table has 35,000 rows for 28,971 call_ids; one disposition per
+-- call is kept (the earliest).
 -- ============================================================
 
 DROP TABLE IF EXISTS stg_dispositions;
 CREATE TABLE stg_dispositions AS
+WITH one_per_call AS (
+    SELECT * FROM (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY call_id ORDER BY event_at, disposition_id) AS rn
+        FROM call_dispositions
+    ) WHERE rn = 1
+)
 SELECT
     disposition_id,
     account_id,
@@ -36,7 +48,7 @@ SELECT
         WHEN disposition_code IN ('PROMISE_TO_PAY', 'PTP', 'PAID', 'DISPUTE', 'REFUSED', 'PTP_BROKEN', 'CALLBACK') 
         THEN TRUE ELSE FALSE 
     END AS is_rpc
-FROM call_dispositions;
+FROM one_per_call;
 
 -- Verify unified PTP count
 SELECT normalized_code, COUNT(*) as cnt FROM stg_dispositions GROUP BY 1 ORDER BY 2 DESC;

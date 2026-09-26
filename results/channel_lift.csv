@@ -1,0 +1,5 @@
+channel,accounts_reached,paid_within_30d_pct,baseline_any_30d_pct,lift_pp
+FIELD,14827,7.92,7.7,0.23
+SMS,13700,7.91,7.7,0.21
+VOICE,11732,7.96,7.7,0.27
+WHATSAPP,19876,7.77,7.7,0.07

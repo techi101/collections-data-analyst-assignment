@@ -1,64 +1,49 @@
 -- ============================================================
 -- 08_counterfactual_did.sql
--- Part 4: Difference-in-Differences Counterfactual
--- "What would recovery look like if we had NOT changed targeting strategy?"
+-- Difference-in-differences: did the April 2026 strategy shift change the
+-- payment rate of accounts targeted by FIELD campaigns?
 --
--- Strategy shift assumed at: 2026-04-01 (midway, April)
--- (Campaigns table shows strategy_version shift from 'legacy'/'v1' to 'v2'/'v3' ~April)
--- Treatment group: Accounts pushed to Field after the shift
--- Control group:   Accounts remaining on Digital (WhatsApp/SMS) throughout
---
--- Assumptions:
---   1. Parallel trends: pre-April, Field and Digital recovery moved together
---   2. No spillover: a Field visit doesn't affect Digital conversion
---   3. The mix of DPD within groups was constant pre-shift (to be verified)
---
--- DiD estimate = (Treatment_Post - Treatment_Pre) - (Control_Post - Control_Pre)
+-- Unit: one targeting row (account, campaign, target_date).
+-- Outcome: did the account make a SUCCESS payment within 30 days AFTER the
+--   target date? (The first version joined every payment the account ever
+--   made, before or after targeting, and never computed the estimate.)
+-- Treatment: FIELD campaigns. Control: WhatsApp + SMS campaigns.
+-- Pre: target_date before 2026-04-01. Post: 2026-04-01 to 2026-06-30
+--   (so every post row has a full 30-day window inside the data).
+-- DiD = (Field post - Field pre) - (Digital post - Digital pre)
+-- Assumption to check: parallel pre-trends (the pre rates are shown).
 -- ============================================================
 
-WITH campaign_groups AS (
-    SELECT 
-        cam.campaign_id,
-        cam.channel,
-        cam.strategy_version,
-        CASE 
-            WHEN cam.start_at < DATE '2026-04-01' THEN 'PRE_SHIFT'
-            ELSE 'POST_SHIFT'
-        END AS period,
-        CASE 
-            WHEN cam.channel = 'FIELD' THEN 'TREATMENT'
-            WHEN cam.channel IN ('WHATSAPP', 'SMS') THEN 'CONTROL'
-            ELSE 'OTHER'
-        END AS group_label
-    FROM campaigns cam
+DROP TABLE IF EXISTS did_results;
+CREATE TABLE did_results AS
+WITH t AS (
+    SELECT dt.account_id, dt.target_date,
+           CASE WHEN cam.channel = 'FIELD' THEN 'TREATMENT_FIELD'
+                WHEN cam.channel IN ('WHATSAPP', 'SMS') THEN 'CONTROL_DIGITAL' END AS grp,
+           CASE WHEN dt.target_date < DATE '2026-04-01' THEN 'PRE' ELSE 'POST' END AS period
+    FROM daily_targeting dt
+    JOIN campaigns cam ON cam.campaign_id = dt.campaign_id
+    WHERE cam.channel IN ('FIELD', 'WHATSAPP', 'SMS')
+      AND dt.target_date >= DATE '2026-01-01' AND dt.target_date < DATE '2026-07-01'
 ),
-recovery_by_group AS (
-    SELECT
-        cg.group_label,
-        cg.period,
-        COUNT(DISTINCT p.account_id) AS accounts_recovered,
-        SUM(p.amount) AS total_recovery
-    FROM campaign_groups cg
-    JOIN daily_targeting dt ON cg.campaign_id = dt.campaign_id
-    LEFT JOIN clean_payments p ON dt.account_id = p.account_id AND p.payment_status = 'SUCCESS'
-    WHERE cg.group_label IN ('TREATMENT', 'CONTROL')
-    GROUP BY 1, 2
+o AS (
+    SELECT t.grp, t.period, t.account_id, t.target_date,
+           MAX(CASE WHEN p.payment_id IS NOT NULL THEN 1 ELSE 0 END) AS paid_30d
+    FROM t
+    LEFT JOIN stg_recovery p
+      ON p.account_id = t.account_id
+     AND p.event_at >  t.target_date
+     AND p.event_at <= t.target_date + INTERVAL 30 DAY
+    GROUP BY 1, 2, 3, 4
 )
+SELECT grp, period, COUNT(*) AS targeting_rows, ROUND(100.0 * AVG(paid_30d), 2) AS paid_within_30d_pct
+FROM o GROUP BY 1, 2 ORDER BY 1, 2 DESC;
+
+SELECT * FROM did_results;
+
 SELECT
-    group_label,
-    period,
-    accounts_recovered,
-    total_recovery / 1e7 AS recovery_cr
-FROM recovery_by_group
-ORDER BY group_label, period;
-
--- DiD point estimate (manual calculation narrative):
--- ATT (Average Treatment Effect on Treated) =
---   [Field POST - Field PRE] - [Digital POST - Digital PRE]
--- If ATT < 0, the strategy shift HURT Field recovery performance
--- This is the counterfactual: without the shift, Field would have recovered ATT more
-
--- Confounding factors:
---   - DPD mix shifted to harder accounts for Field post-shift (attenuates estimate)
---   - Seasonal effects (Q1 vs Q2 collections cycles)
---   - Vendor changes coinciding with strategy shift (Airtel inactive → Knowlarity)
+    ROUND( (MAX(CASE WHEN grp='TREATMENT_FIELD' AND period='POST' THEN paid_within_30d_pct END)
+          - MAX(CASE WHEN grp='TREATMENT_FIELD' AND period='PRE'  THEN paid_within_30d_pct END))
+         - (MAX(CASE WHEN grp='CONTROL_DIGITAL' AND period='POST' THEN paid_within_30d_pct END)
+          - MAX(CASE WHEN grp='CONTROL_DIGITAL' AND period='PRE'  THEN paid_within_30d_pct END)), 2) AS did_estimate_pp
+FROM did_results;

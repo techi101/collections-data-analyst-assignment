@@ -19,9 +19,9 @@ flowchart TD
     %% ── STAGING LAYER ────────────────────────────────────────
     subgraph STAGING["⚙️ Staging Layer  (dbt / Spark Streaming)"]
         direction TB
-        S1["stg_payments\n• Dedup by payment_reference\n• Flag REVERSED, PENDING\n• Schema contract enforced"]
+        S1["stg_payments\n• Dedup by payment_id\n• Recovery = SUCCESS only\n• Schema contract enforced"]
         S2["stg_calls\n• Normalize timezone → UTC\n• Derive hour_ist\n• Dedup same account+timestamp"]
-        S3["stg_agents\n• Entity resolution\n• Canonical agent_id per employee_code"]
+        S3["stg_agents\n• agent_id as key\n• Conflicting attributes flagged"]
         S4["stg_dispositions\n• Unify legacy + v1 + v2 codes\n• Tag is_rpc, is_ptp"]
         S5["stg_borrowers\n• Dedup by borrower_id\n• Latest updated_at wins"]
     end
@@ -29,8 +29,8 @@ flowchart TD
     %% ── CLEAN LAYER ──────────────────────────────────────────
     subgraph CLEAN["✅ Clean Layer (dbt Models — daily refresh)"]
         C1["dim_accounts\nPK: account_id\nSCD Type 2 for DPD changes"]
-        C2["dim_agents\nPK: canonical_agent_id\nTenure calculated"]
-        C3["fact_payments\nPK: payment_reference\nStatus = SUCCESS only"]
+        C2["dim_agents\nPK: agent_id\nLatest attributes, flagged"]
+        C3["fact_payments\nPK: payment_id\nStatus = SUCCESS only"]
         C4["fact_calls\nPK: call_id\nTimezone-normalized"]
         C5["fact_dispositions\nPK: disposition_id\nNormalized codes"]
     end
@@ -75,14 +75,14 @@ flowchart TD
 ### Data Contracts
 - Each source system must publish a JSON Schema for every event type.
 - Schema version changes (`v1` → `v2`) must bump a `schema_version` field **and** trigger a mapping update in `stg_dispositions` before going live.
-- Payment events must include `payment_reference` as a **stable, idempotent** identifier. Retries must reuse the same reference.
+- Payment events must carry a unique `payment_id`; retries must reuse the same `payment_id`. `payment_reference` is not unique in this data (3,407 references are shared by different accounts) and must never be used as a key.
 
 ### Primary Keys
 | Table | Primary Key | Uniqueness Guarantee |
 |-------|-------------|---------------------|
-| `fact_payments` | `payment_reference` | Enforced via UPSERT |
+| `fact_payments` | `payment_id` | Enforced via UPSERT |
 | `fact_calls` | `call_id` | Enforced via UPSERT |
-| `dim_agents` | `canonical_agent_id` (from `employee_code`) | Surrogate key |
+| `dim_agents` | `agent_id` | Operational key; employee_code/name unreliable until fixed at source |
 | `dim_accounts` | `account_id` | Source system guarantee |
 | `fact_dispositions` | `disposition_id` | Enforced via UPSERT |
 
@@ -94,7 +94,7 @@ flowchart TD
 ### Metric Definitions (Source of Truth)
 | Metric | Numerator | Denominator | Notes |
 |--------|-----------|-------------|-------|
-| **Recovery Rate** | Unique accounts with SUCCESS payment | All accounts in `daily_targeting` for that month | Use targeting table, not payments table, for denominator |
+| **Paying-account rate** | Unique accounts with SUCCESS payment | All accounts in `accounts` | Targeting-based denominators describe different accounts from the payers |
 | **Contact Rate (RPC)** | Calls with `is_rpc = TRUE` disposition | Unique accounts with ≥1 call attempt | Per account, not per call |
 | **PTP Rate** | Accounts with `PTP_MADE` disposition | Accounts with RPC contact | Only meaningful relative to contacted accounts |
 | **PTP Kept Rate** | `promises_to_pay` with `status = 'KEPT'` | All PTPs made in same month | Measures follow-through quality |
@@ -102,5 +102,5 @@ flowchart TD
 
 ### Monitoring & Anomaly Detection
 - **Daily Z-score alert**: If total daily recovery deviates > 2σ from the 30-day rolling average, auto-create a Slack alert and ticket.
-- **Duplicate rate monitor**: If `COUNT(*) / COUNT(DISTINCT payment_reference) > 1.05` in any batch, halt ingestion and alert.
+- **Duplicate rate monitor**: If `COUNT(*) / COUNT(DISTINCT payment_id) > 1.05` in any batch, halt ingestion and alert. Also alert if a `payment_id` appears with two different accounts or amounts.
 - **Timezone sentinel**: If any new vendor sends >5% of calls in a new timezone value, flag for mapping update.

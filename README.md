@@ -1,123 +1,118 @@
 # Collections Data Analyst Assignment
 
-## 🔴 TL;DR — Bottom Line for Leadership
+> **Revised September 2026.** I re-audited my August submission and found that
+> its headline rested on a wrong duplicate key. [`CORRECTIONS.md`](CORRECTIONS.md)
+> explains what was wrong, how I found it and what changed. Everything below is
+> the corrected analysis, reproduced from the raw CSVs by `python run_pipeline.py`.
 
-The business claim that **"recovery has improved by 11% month-on-month" is false.**
+## TL;DR for leadership
 
-After forensic analysis of 17 raw tables, we found:
-- **₹24.3 Cr (22.1%) of recovery was inflated** by 3,752 duplicate payment events
-- **True average MoM change: −7.8%** (not +11%)
-- Recovery rate fell from **39.9% → 29.7%** (Jan → Jul 2026)
-- Contact rates (~30% RPC) were stable — the problem is **portfolio health, not operations**
-- **WhatsApp** is the highest-performing channel (₹41.8 Cr recovered) → **recommended for ₹10 Cr investment**
+The claim that **"recovery improved 11% month-on-month" describes one month, not a trend.**
 
----
-
-## 📊 Live Executive Dashboard (CEO View — 60 seconds)
-
-> **[🖥️ Open Executive Dashboard](https://techi101.github.io/collections-data-analyst-assignment/dashboard/)**
->
-> Open this link in any browser — no login or installation required.
-
----
-
-## 📁 Deliverables Index
-
-| # | Deliverable | How to View |
-|---|-------------|-------------|
-| 1 | **SQL Repository** | Browse [`sql_repo/`](sql_repo/) — 8 production SQL files |
-| 2 | **Analysis Notebook** | View [`notebooks/analysis.ipynb`](notebooks/analysis.ipynb) — renders on GitHub |
-| 3 | **Golden Dataset Pipeline** | Run `python run_pipeline.py` to reproduce `golden_dataset.duckdb` |
-| 4 | **Data Quality Report** | Read [`data_quality_report.md`](data_quality_report.md) |
-| 5 | **Executive Dashboard** | **[Live link](https://techi101.github.io/collections-data-analyst-assignment/dashboard/)** or open `dashboard/index.html` locally |
-| 6 | **Executive Memo** | Read [`executive_memo.md`](executive_memo.md) |
-| 7 | **Architecture Diagram** | Read [`architecture_diagram.md`](architecture_diagram.md) — Mermaid diagram renders on GitHub |
+- March recovery was 11.0% above February, but February was 9.1% below January.
+  Across January to July recovery is **flat**: ₹18.72 Cr in January, ₹18.72 Cr in July.
+- Real duplicate payments are small: 325 successful rows, ₹2.45 Cr (~1.9%), keyed on `payment_id`.
+  `payment_reference` is **not** a unique key: 3,407 references are reused across
+  *different* accounts, and deduplicating on it (as my August version did) deleted
+  ₹20.4 Cr of real payments and invented a decline.
+- Contact rate, promise-kept rate, productivity and portfolio mix are all flat.
+- **No channel shows measurable lift**: accounts reached by any channel pay within
+  30 days at 7.8–8.0%, the same as the 7.7% baseline. WhatsApp gets the most
+  last-touch credit only because it sends the most messages.
+- **₹10 Cr recommendation:** don't commit it to one channel on this evidence. Run an
+  8-week randomised holdout test first, fix the data at source, then deploy the rest
+  to whatever the test shows works. See [`executive_memo.md`](executive_memo.md).
 
 ---
 
-## 🔍 Key Findings Summary
+## Live dashboard
 
-### Data Forensics (Part 2)
-
-| Check | Found? | Impact |
-|-------|--------|--------|
-| A. Duplicate payments | ✅ YES | 3,752 events · ₹24.3 Cr inflation (22.1%) |
-| B. Attribution errors | ✅ YES | 5,035 self-cure payments wrongly attributed to campaigns |
-| C. Timezone problems | ✅ YES | 91k calls in 3 timezones (UTC/IST/Dubai) — hourly analytics broken |
-| D. Disposition code changes | ✅ YES | 3 schema versions — PTP undercounted by 33.8% |
-| E. Agent identity problems | ✅ YES | 10 agents with ~950 duplicate IDs each |
-| F. Portfolio mix changes | ⚠️ UNCLEAR | Uniform DPD distribution (synthetic dataset) |
-| G. Denominator manipulation | ✅ CHECKED | Low risk — only 0.7% accounts uncovered |
-
-### Statistical Investigation (Part 3)
-- **Contact Rate**: Stable ~30% ✅ — not the problem
-- **PTP Kept Rate**: Stable ~24–25% ✅ — not the problem
-- **Recovery Rate**: Fell 10 pp (39.9% → 29.7%) ❌ — portfolio health declining
-- **Simpson's Paradox**: Tested — decline is genuine within every DPD bucket, not a mix artefact
-- **Survivorship Bias**: Checked — not a material factor
-
-### Counterfactual (Part 4)
-- **Method**: Difference-in-Differences (DiD)
-- **Finding**: The mid-year strategy shift (routing late-DPD accounts to Field) **reduced** Field recovery vs. the counterfactual baseline
-
-### Investment Recommendation (₹10 Cr)
-**→ WhatsApp / Digital Engagement**
-
-| Parameter | Estimate |
-|-----------|----------|
-| Accounts recovered (Jan–Jul) | 3,678 (highest of all channels) |
-| Total recovered | ₹41.8 Cr (highest of all channels) |
-| Expected incremental recovery | ₹12–18 Cr / year |
-| ROI | 1.2x–1.8x in 12 months |
-| Break-even | 7–9 months |
-| Confidence | High (Strong Evidence) |
+> **[Open the dashboard](https://techi101.github.io/collections-data-analyst-assignment/dashboard/)**, or open `dashboard/index.html` locally.
 
 ---
 
-## ▶️ How to Run Locally
+## Deliverables
 
-### Prerequisites
+| # | Deliverable | Where |
+|---|---|---|
+| 1 | SQL repository | [`sql_repo/`](sql_repo/): 8 files, run in order by the pipeline |
+| 2 | Reproducible pipeline | `python run_pipeline.py`: raw CSVs → `golden_dataset.duckdb`, `golden_metrics.csv`, `forensics_summary.json`, `results/`, `dashboard/data.json` |
+| 3 | Data quality report | [`data_quality_report.md`](data_quality_report.md) |
+| 4 | Executive memo | [`executive_memo.md`](executive_memo.md) |
+| 5 | Dashboard | [`dashboard/`](dashboard/) |
+| 6 | Architecture | [`architecture_diagram.md`](architecture_diagram.md) |
+| 7 | Corrections log | [`CORRECTIONS.md`](CORRECTIONS.md) |
+| 8 | Analysis notebook (August version) | [`notebooks/analysis.ipynb`](notebooks/analysis.ipynb): kept for reference; its numbers are superseded by the pipeline |
+
+---
+
+## Key findings
+
+### Monthly metrics (Jan–Jul 2026; August has 8 days and is excluded)
+
+| Month | Recovery ₹ Cr | MoM | Paying / portfolio | Answer rate | RPC rate | PTP kept | ₹ per agent-hour |
+|---|---|---|---|---|---|---|---|
+| Jan | 18.72 | — | 7.91% | 20.0% | 76.5% | 24.1% | 16,773 |
+| Feb | 17.01 | −9.1% | 7.24% | 19.7% | 76.4% | 25.5% | 16,117 |
+| Mar | 18.89 | +11.0% | 8.06% | 19.9% | 77.3% | 24.7% | 16,972 |
+| Apr | 17.51 | −7.3% | 7.68% | 19.3% | 77.7% | 25.2% | 16,491 |
+| May | 18.43 | +5.2% | 7.81% | 20.4% | 78.5% | 25.3% | 17,008 |
+| Jun | 17.56 | −4.7% | 7.62% | 20.4% | 77.1% | 24.7% | 16,403 |
+| Jul | 18.72 | +6.7% | 7.78% | 19.4% | 76.2% | 24.6% | 16,748 |
+
+### Data forensics
+
+| Check | Finding |
+|---|---|
+| A. Duplicate payments | 500 repeated `payment_id` rows; 325 successful, ₹2.45 Cr. `payment_reference` collides across accounts and is not a key. |
+| B. Attribution | 63.8% of successful payments had no contact in the prior 30 days (self-cure). |
+| C. Time zones | Calls split evenly across UTC, IST and Dubai; normalised to UTC. |
+| D. Disposition codes | `PTP` and `PROMISE_TO_PAY` both appear in all 3 versions; counting one misses ~50% of promises. |
+| E. Agent identity | Employee code and name change per row for every agent_id; master data can't resolve identity. |
+| F. Portfolio mix | Early-DPD share of payers 44–47%, stable. |
+| G. Denominators | Targeting-based denominators don't match payers (462 of 2,374 January payers targeted); portfolio used instead. |
+
+### Channels and the strategy shift
+
+| Channel | Last-touch credit (₹ Cr) | Paid within 30 days of first contact | Lift vs 7.7% baseline (95% CI) |
+|---|---|---|---|
+| WhatsApp | 16.95 | 7.77% | +0.07 pp (−0.30, +0.44) |
+| Field | 10.93 | 7.92% | +0.23 pp (−0.20, +0.66) |
+| SMS | 9.94 | 7.91% | +0.21 pp (−0.24, +0.66) |
+| Voice | 8.19 | 7.96% | +0.27 pp (−0.22, +0.76) |
+
+April strategy shift, difference-in-differences (Field vs WhatsApp+SMS campaigns,
+30-day payment after targeting): +1.34 pp, 95% CI −0.25 to +2.93. No detectable effect.
+
+---
+
+## How to run
+
 ```bash
-pip install duckdb pandas nbformat
+pip install duckdb pandas
+python run_pipeline.py        # about 5 seconds; prints the tables above
 ```
 
-### Step 1 — Rebuild the Golden Dataset
-```bash
-python run_pipeline.py
-```
-This loads all 17 CSVs into DuckDB, runs all staging SQL (dedup, timezone fix, entity resolution), and outputs `golden_dataset.duckdb` and `golden_metrics.csv`.
+Then open `dashboard/index.html`.
 
-### Step 2 — Open the Dashboard
-```bash
-# Just double-click dashboard/index.html in your file explorer
-# OR open this link:
-# https://techi101.github.io/collections-data-analyst-assignment/dashboard/
-```
-
-### Step 3 — Open the Notebook
-```bash
-cd notebooks
-jupyter notebook analysis.ipynb
-```
-
----
-
-## 🗂️ SQL Repository Structure
+## SQL repository
 
 ```
 sql_repo/
-├── 01_staging_payments.sql          # Dedup by payment_reference (removes ₹24.3 Cr inflation)
-├── 02_staging_agents.sql            # Entity resolution — multi-ID agents collapsed
-├── 03_staging_calls.sql             # Timezone normalization (UTC/IST/Dubai → UTC)
-├── 04_staging_dispositions.sql      # Unify legacy + v1 + v2 disposition codes
-├── 05_golden_monthly_metrics.sql    # Recovery Rate, Contact Rate, PTP Rate, Recovery/Agent-Hour
-├── 06_channel_analysis.sql          # Channel ROI + WhatsApp funnel + Field conversion
-├── 07_statistical_investigation.sql # Mix effects, Simpson's Paradox, agent tenure analysis
-└── 08_counterfactual_did.sql        # Difference-in-Differences counterfactual
+├── 01_staging_payments.sql          # one row per payment_id; recovery = SUCCESS
+├── 02_staging_agents.sql            # agent_id as key; conflicting attributes flagged
+├── 03_staging_calls.sql             # time zones → UTC; duplicate calls flagged
+├── 04_staging_dispositions.sql      # PTP + PROMISE_TO_PAY → PTP_MADE; one per call
+├── 05_golden_monthly_metrics.sql    # recovery, paying rate, contact, PTP, productivity
+├── 06_channel_analysis.sql          # last-touch attribution + lift vs baseline
+├── 07_statistical_investigation.sql # mix effects, Simpson's check, survivorship
+└── 08_counterfactual_did.sql        # difference-in-differences for the April shift
 ```
 
----
+`archive/` holds the superseded August scripts and outputs.
 
-## 📦 Dataset
-17 raw CSV files · Synthetic · ~12 months · 30,000 accounts · Seed = 42  
-Intentional issues: duplicates, missing values, timezone conflicts, legacy schemas, duplicate payments, multi-ID agents.
+## Dataset
+
+17 raw CSV files, synthetic, 30,000 accounts, Jan–Aug 2026 (seed 42). Injected
+issues include duplicate payments, time-zone conflicts, legacy disposition codes
+and inconsistent agent master data.

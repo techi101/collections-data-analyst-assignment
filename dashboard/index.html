@@ -230,7 +230,13 @@
         }
         .forensics-list .fi-text { color: var(--text); }
         .forensics-list .fi-sub { font-size: 0.7rem; color: var(--muted); }
-    </style>
+            @media (max-width: 760px) {
+            body { padding: 16px; }
+            .header { flex-direction: column; gap: 12px; }
+            .kpi-grid, .charts-grid, .bottom-grid { grid-template-columns: 1fr !important; }
+            .rec-row { flex-direction: column; gap: 2px; }
+        }
+</style>
 </head>
 <body>
 
@@ -238,64 +244,64 @@
 <div class="header">
     <div class="header-left">
         <h1>Collections Analytics — Leadership Brief</h1>
-        <p>Based on 7 months of data (Jan–Jul 2026) · 30,000 accounts · Golden Dataset (deduplicated)</p>
+        <p>7 months of data (Jan–Jul 2026) · 30,000 accounts · one row per payment_id · revised Sep 2026 (see CORRECTIONS.md)</p>
     </div>
-    <div class="verdict-chip">
-        <div class="dot"></div>
+    <div class="verdict-chip" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.35)">
+        <div class="dot" style="background:var(--amber)"></div>
         <div>
-            <span>Reported +11% is FALSE</span>
-            <small>True avg MoM recovery: −7.8% (Jan–Jul)</small>
+            <span style="color:var(--amber)">+11% is one month, not a trend</span>
+            <small>Recovery flat: ₹18.72 Cr in Jan and in Jul</small>
         </div>
     </div>
 </div>
 
 <!-- ALERT -->
-<div class="alert">
-    The <strong>+11% MoM improvement claim cannot be substantiated.</strong>
-    The raw payments table contained <strong>2,752 duplicate SUCCESS events</strong> inflating recovery by <strong>₹24.3 Cr (22.1%)</strong>.
-    After deduplication, recovery shows a <strong>consistent decline from ₹17.98 Cr (Jan) → ₹13.40 Cr (Jul)</strong>.
-    The March spike (+6.6%) which likely drove the 11% claim was entirely a duplicate-payment artifact.
+<div class="alert" style="border-left-color:var(--amber);background:rgba(245,158,11,0.08)">
+    <strong style="color:var(--amber)">March was +11.0% on February, but February was −9.1% on January.</strong>
+    Month-on-month changes from February to July average <strong style="color:var(--amber)">+0.3%</strong>.
+    Real duplicate payments are small (325 successful rows, ₹2.45 Cr, ~1.9%) and evenly spread, so they do not explain March.
+    Contact, promise-kept rate, productivity and portfolio mix are all flat.
 </div>
 
 <!-- KPI ROW -->
 <div class="kpi-grid">
-    <div class="kpi accent-red">
-        <div class="label">True Avg MoM Growth</div>
-        <div class="value red">−7.8%</div>
-        <div class="sub"><span class="badge bad">Reported: +11%</span></div>
-    </div>
-    <div class="kpi accent-red">
-        <div class="label">Total Recovery (Jan–Jul)</div>
-        <div class="value red">₹102.4 Cr</div>
-        <div class="sub">Clean data · <span class="badge bad">Was ₹134.2 Cr raw</span></div>
-    </div>
     <div class="kpi accent-amber">
-        <div class="label">Recovery Rate (Jul vs Jan)</div>
-        <div class="value amber">29.7%</div>
-        <div class="sub">Was 39.9% in Jan <span class="badge bad">−10.2 pp</span></div>
+        <div class="label">Avg MoM change, Feb–Jul</div>
+        <div class="value amber">+0.3%</div>
+        <div class="sub"><span class="badge neutral">Reported: +11% (March only)</span></div>
     </div>
     <div class="kpi accent-blue">
-        <div class="label">Contact Rate (RPC)</div>
-        <div class="value blue">~30%</div>
-        <div class="sub">Stable across period <span class="badge neutral">Flat</span></div>
+        <div class="label">Total Recovery (Jan–Jul)</div>
+        <div class="value blue">₹126.8 Cr</div>
+        <div class="sub">After removing ₹2.45 Cr of duplicates</div>
     </div>
-    <div class="kpi accent-green">
-        <div class="label">Best Channel</div>
-        <div class="value green">WhatsApp</div>
-        <div class="sub">₹41.8 Cr recovered · 3,678 accounts</div>
+    <div class="kpi accent-blue">
+        <div class="label">Accounts paying / portfolio</div>
+        <div class="value blue">7.8%</div>
+        <div class="sub">July · range 7.2–8.1% <span class="badge neutral">Flat</span></div>
+    </div>
+    <div class="kpi accent-blue">
+        <div class="label">Right-party contact</div>
+        <div class="value blue">76–79%</div>
+        <div class="sub">of dispositioned calls <span class="badge neutral">Flat</span></div>
+    </div>
+    <div class="kpi accent-amber">
+        <div class="label">Channel lift vs baseline</div>
+        <div class="value amber">≈ 0</div>
+        <div class="sub">All 95% intervals include zero</div>
     </div>
 </div>
 
 <!-- MAIN CHARTS -->
 <div class="charts-grid">
     <div class="chart-card">
-        <h3>Monthly Recovery — Clean vs Raw Data (₹ Crores)</h3>
+        <h3>Monthly Recovery — deduplicated by payment_id vs raw (₹ Crores)</h3>
         <div class="chart-wrap">
             <canvas id="recoveryChart"></canvas>
         </div>
     </div>
     <div class="chart-card">
-        <h3>Channel Recovery (₹ Cr)</h3>
+        <h3>Last-touch credit, 30-day window (₹ Cr) · plus ₹80.8 Cr (64%) with no contact</h3>
         <div class="chart-wrap">
             <canvas id="channelChart"></canvas>
         </div>
@@ -310,7 +316,7 @@
             <thead>
                 <tr>
                     <th>Month</th>
-                    <th>Recovery Rate</th>
+                    <th>Paying rate</th>
                     <th>PTP Kept%</th>
                     <th>₹/Agent-Hr</th>
                 </tr>
@@ -321,42 +327,41 @@
     <div class="chart-card">
         <h3>Data Forensics — Issues Found</h3>
         <ul class="forensics-list">
-            <li><span class="icon">🔴</span><div><div class="fi-text">Duplicate Payments</div><div class="fi-sub">2,752 events · ₹24.3 Cr inflated (22.1%)</div></div></li>
-            <li><span class="icon">🔴</span><div><div class="fi-text">Timezone Mismatch (60k+ calls)</div><div class="fi-sub">UTC/IST/Dubai mixed — hourly analytics broken</div></div></li>
-            <li><span class="icon">🟡</span><div><div class="fi-text">Agent Identity Conflicts</div><div class="fi-sub">10 agents with 900+ duplicate IDs each</div></div></li>
-            <li><span class="icon">🟡</span><div><div class="fi-text">Legacy Disposition Codes</div><div class="fi-sub">PTP_MADE undercounted 33.8% if legacy codes ignored</div></div></li>
-            <li><span class="icon">🟡</span><div><div class="fi-text">Attribution Errors</div><div class="fi-sub">5,035 payments with no prior call interaction</div></div></li>
-            <li><span class="icon">🟢</span><div><div class="fi-text">No Denominator Manipulation Detected</div><div class="fi-sub">Only 207 accounts (0.7%) with no digital or call contact</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Duplicate payments (by payment_id)</div><div class="fi-sub">325 successful rows · ₹2.45 Cr (~1.9%). payment_reference is NOT a key: 3,407 are reused across accounts</div></div></li>
+            <li><span class="icon">🔴</span><div><div class="fi-text">Self-cure credited to campaigns</div><div class="fi-sub">63.8% of payments had no contact in the prior 30 days</div></div></li>
+            <li><span class="icon">🔴</span><div><div class="fi-text">Timezone mismatch (91k calls)</div><div class="fi-sub">UTC / IST / Dubai in equal thirds — normalised to UTC</div></div></li>
+            <li><span class="icon">🔴</span><div><div class="fi-text">Two PTP codes in every schema version</div><div class="fi-sub">Counting one misses ~50% of promises (3,926 of 7,830)</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Agent master data unreliable</div><div class="fi-sub">Employee code and name change per row for all 1,000 agent_ids</div></div></li>
+            <li><span class="icon">🟡</span><div><div class="fi-text">Denominator mismatch</div><div class="fi-sub">Only 462 of January's 2,374 payers were in that month's targeting list</div></div></li>
         </ul>
     </div>
     <div class="recommendation">
-        <h3>₹10 Cr Investment Recommendation</h3>
-        <div class="rec-title">→ Invest in WhatsApp / Digital Engagement</div>
+        <h3>₹10 Cr Recommendation</h3>
+        <div class="rec-title">→ Test before committing: no channel shows measurable lift</div>
         <div class="rec-rows">
-            <div class="rec-row"><span class="rk">Expected Incremental Recovery</span><span class="rv">₹12–18 Cr / year</span></div>
-            <div class="rec-row"><span class="rk">Estimated ROI</span><span class="rv">1.2x–1.8x in 12 months</span></div>
-            <div class="rec-row"><span class="rk">Break-even Point</span><span class="rv">~7–9 months</span></div>
-            <div class="rec-row"><span class="rk">Key Assumption</span><span class="rv">WhatsApp opt-in rate remains stable</span></div>
-            <div class="rec-row"><span class="rk">Confidence</span><span class="rv">High (Strong Evidence)</span></div>
-            <div class="rec-row"><span class="rk">Downside Scenario</span><span class="rv">Carrier block → fall back to IVR</span></div>
-            <div class="rec-row"><span class="rk">Why not Field ops?</span><span class="rv">Lowest ₹/account, highest cost-per-contact</span></div>
-            <div class="rec-row"><span class="rk">Why not more agents?</span><span class="rv">Recovery/agent-hour declining Jan→Jul (₹16k→₹12k)</span></div>
+            <div class="rec-row"><span class="rk">Step 1 (proposed ≤ ₹1.5 Cr)</span><span class="rv">8-week randomised holdout, 20% per channel</span></div>
+            <div class="rec-row"><span class="rk">Detectable lift</span><span class="rv">≈ 1.3 pp (80% power, 5% level)</span></div>
+            <div class="rec-row"><span class="rk">Step 2 (proposed ≤ ₹1.5 Cr)</span><span class="rv">Fix data at source: payment_id, one PTP code, UTC, agent master</span></div>
+            <div class="rec-row"><span class="rk">Step 3 (≥ ₹7 Cr)</span><span class="rv">Deploy to the channel the test proves, by lift per rupee</span></div>
+            <div class="rec-row"><span class="rk">Why not WhatsApp now?</span><span class="rv">Most credit only because it sends the most messages; lift +0.07 pp</span></div>
+            <div class="rec-row"><span class="rk">April strategy shift</span><span class="rv">DiD +1.3 pp, 95% CI −0.2 to +2.9: no detectable effect</span></div>
+            <div class="rec-row"><span class="rk">Why not more agents?</span><span class="rv">₹/agent-hour flat (₹16.1k–17.0k); contact shows no lift</span></div>
         </div>
     </div>
 </div>
 
 <script>
-// ─── DATA ────────────────────────────────────────────────────
+// ─── DATA (from run_pipeline.py → golden_metrics.csv, results/) ─────
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-const cleanRecovery = [17.98, 15.62, 16.64, 14.68, 14.72, 13.39, 13.40];
+const cleanRecovery = [18.72, 17.01, 18.89, 17.51, 18.43, 17.56, 18.72];
 const rawRecovery   = [19.11, 17.41, 19.32, 17.84, 18.70, 17.87, 19.03];
 
-const recRate     = [39.86, 38.93, 37.70, 34.93, 32.78, 31.76, 29.74];
-const ptpKept     = [24.07, 25.54, 24.67, 25.24, 25.29, 24.68, 24.56];
-const recPerHour  = [16106, 14792, 14951, 13823, 13584, 12512, 11983];
+const recRate     = [7.91, 7.24, 8.06, 7.68, 7.81, 7.62, 7.78];
+const ptpKept     = [24.1, 25.5, 24.7, 25.2, 25.3, 24.7, 24.6];
+const recPerHour  = [16773, 16117, 16972, 16491, 17008, 16403, 16748];
 
-const channels    = ['WhatsApp', 'SMS', 'Mixed', 'Voice', 'Field'];
-const channelVals = [41.83, 37.49, 31.68, 26.70, 26.09];
+const channels    = ['WhatsApp', 'Field', 'SMS', 'Voice'];
+const channelVals = [16.95, 10.93, 9.94, 8.19];
 
 const GRID = 'rgba(255,255,255,0.05)';
 const TICK = '#64748b';
@@ -368,7 +373,7 @@ new Chart(document.getElementById('recoveryChart'), {
         datasets: [
             {
                 type: 'bar',
-                label: 'Clean (Deduplicated)',
+                label: 'Deduplicated by payment_id',
                 data: cleanRecovery,
                 backgroundColor: 'rgba(59,130,246,0.55)',
                 borderColor: '#3b82f6',
@@ -378,7 +383,7 @@ new Chart(document.getElementById('recoveryChart'), {
             },
             {
                 type: 'line',
-                label: 'Raw (Inflated by Duplicates)',
+                label: 'Raw (includes ~1.9% duplicates)',
                 data: rawRecovery,
                 borderColor: 'rgba(240,66,85,0.8)',
                 backgroundColor: 'transparent',
@@ -415,7 +420,7 @@ new Chart(document.getElementById('channelChart'), {
         labels: channels,
         datasets: [{
             data: channelVals,
-            backgroundColor: ['rgba(16,185,129,0.75)', 'rgba(59,130,246,0.6)', 'rgba(139,92,246,0.6)', 'rgba(245,158,11,0.6)', 'rgba(100,116,139,0.6)'],
+            backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)'],
             borderRadius: 4,
             borderWidth: 0
         }]

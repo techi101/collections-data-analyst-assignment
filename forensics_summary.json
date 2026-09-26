@@ -1,8 +1,259 @@
 {
-  "duplicate_payments": 3746,
-  "agent_identity_problems": 10,
-  "timezone_mismatches": 60887,
-  "missing_payment_info": 0,
-  "duplicate_borrower_ids": 8566,
-  "duplicate_account_ids": 0
+  "A_duplicate_payments": {
+    "raw_rows": 25500,
+    "distinct_payment_ids": 25000,
+    "duplicate_rows_by_payment_id": 500,
+    "of_which_exact_copies": 486,
+    "duplicate_success_rows": 346,
+    "duplicate_success_cr": 2.59,
+    "payment_reference_groups_with_repeats": 3407,
+    "reference_groups_within_one_account": 0,
+    "old_reference_dedup_by_month": [
+      {
+        "month": "2026-01",
+        "correct_cr": 18.72,
+        "old_method_cr": 17.98,
+        "old_method_deleted_pct": 4.0
+      },
+      {
+        "month": "2026-02",
+        "correct_cr": 17.01,
+        "old_method_cr": 15.62,
+        "old_method_deleted_pct": 8.2
+      },
+      {
+        "month": "2026-03",
+        "correct_cr": 18.89,
+        "old_method_cr": 16.64,
+        "old_method_deleted_pct": 11.9
+      },
+      {
+        "month": "2026-04",
+        "correct_cr": 17.51,
+        "old_method_cr": 14.68,
+        "old_method_deleted_pct": 16.2
+      },
+      {
+        "month": "2026-05",
+        "correct_cr": 18.43,
+        "old_method_cr": 14.72,
+        "old_method_deleted_pct": 20.1
+      },
+      {
+        "month": "2026-06",
+        "correct_cr": 17.56,
+        "old_method_cr": 13.39,
+        "old_method_deleted_pct": 23.7
+      },
+      {
+        "month": "2026-07",
+        "correct_cr": 18.72,
+        "old_method_cr": 13.4,
+        "old_method_deleted_pct": 28.5
+      }
+    ],
+    "verdict": "Real duplicates are repeated payment_ids (about 2% of successful value). Repeated payment_references are collisions between different accounts, not duplicates; deduplicating on them deleted real payments, increasingly in later months."
+  },
+  "B_attribution": {
+    "payments_with_no_contact_in_prior_30_days": 10793,
+    "share_pct": 63.8,
+    "verdict": "Most payments had no contact on any channel in the 30 days before; campaign-level joins without a time window credit campaigns with these self-cure payments."
+  },
+  "C_timezones": {
+    "calls_by_timezone": [
+      {
+        "timezone": "Asia/Dubai",
+        "calls": 30464
+      },
+      {
+        "timezone": "Asia/Kolkata",
+        "calls": 30485
+      },
+      {
+        "timezone": "UTC",
+        "calls": 30401
+      }
+    ],
+    "verdict": "Calls are stored in local time for three zones; stg_calls converts to UTC."
+  },
+  "D_dispositions": {
+    "codes": [
+      {
+        "disposition_code": "PROMISE_TO_PAY",
+        "n": 3926
+      },
+      {
+        "disposition_code": "PTP",
+        "n": 3904
+      }
+    ],
+    "versions_with_both_codes": 3,
+    "raw_rows": 35000,
+    "distinct_calls": 28971,
+    "verdict": "PTP and PROMISE_TO_PAY both occur in every schema version; counting one misses about half of promises."
+  },
+  "E_agents": {
+    "agent_ids": 1000,
+    "conflicting": 1000.0,
+    "avg_codes": 29.6,
+    "distinct_names_in_table": 10,
+    "verdict": "Agent master data is inconsistent (codes and names change per row); agent_id is used as the key and no per-person claims are made."
+  },
+  "F_portfolio_mix": [
+    {
+      "month": "2026-01",
+      "early_dpd_share_pct": 45.1,
+      "late_dpd_share_pct": 18.0
+    },
+    {
+      "month": "2026-02",
+      "early_dpd_share_pct": 44.1,
+      "late_dpd_share_pct": 18.9
+    },
+    {
+      "month": "2026-03",
+      "early_dpd_share_pct": 47.2,
+      "late_dpd_share_pct": 16.8
+    },
+    {
+      "month": "2026-04",
+      "early_dpd_share_pct": 44.3,
+      "late_dpd_share_pct": 16.5
+    },
+    {
+      "month": "2026-05",
+      "early_dpd_share_pct": 44.7,
+      "late_dpd_share_pct": 18.3
+    },
+    {
+      "month": "2026-06",
+      "early_dpd_share_pct": 45.2,
+      "late_dpd_share_pct": 17.6
+    },
+    {
+      "month": "2026-07",
+      "early_dpd_share_pct": 44.5,
+      "late_dpd_share_pct": 18.3
+    }
+  ],
+  "headline": {
+    "jan_recovery_cr": 18.72,
+    "jul_recovery_cr": 18.72,
+    "mar_mom_pct": 11.0,
+    "feb_mom_pct": -9.1,
+    "mean_mom_feb_to_jul_pct": 0.3,
+    "verdict": "Recovery is flat Jan-Jul. The +11% is March alone, rebounding from a -9.1% February; not a trend."
+  },
+  "channel_attribution": [
+    {
+      "channel": "NO_CONTACT_30D",
+      "payments": 10793,
+      "recovered_cr": 80.84,
+      "share_of_payments_pct": 63.8
+    },
+    {
+      "channel": "WHATSAPP",
+      "payments": 2252,
+      "recovered_cr": 16.95,
+      "share_of_payments_pct": 13.3
+    },
+    {
+      "channel": "FIELD",
+      "payments": 1452,
+      "recovered_cr": 10.93,
+      "share_of_payments_pct": 8.6
+    },
+    {
+      "channel": "SMS",
+      "payments": 1336,
+      "recovered_cr": 9.94,
+      "share_of_payments_pct": 7.9
+    },
+    {
+      "channel": "VOICE",
+      "payments": 1085,
+      "recovered_cr": 8.19,
+      "share_of_payments_pct": 6.4
+    }
+  ],
+  "channel_lift": [
+    {
+      "channel": "FIELD",
+      "accounts_reached": 14827,
+      "paid_within_30d_pct": 7.92,
+      "baseline_any_30d_pct": 7.7,
+      "lift_pp": 0.23,
+      "lift_ci95_pp": [
+        -0.2,
+        0.66
+      ]
+    },
+    {
+      "channel": "SMS",
+      "accounts_reached": 13700,
+      "paid_within_30d_pct": 7.91,
+      "baseline_any_30d_pct": 7.7,
+      "lift_pp": 0.21,
+      "lift_ci95_pp": [
+        -0.24,
+        0.66
+      ]
+    },
+    {
+      "channel": "VOICE",
+      "accounts_reached": 11732,
+      "paid_within_30d_pct": 7.96,
+      "baseline_any_30d_pct": 7.7,
+      "lift_pp": 0.27,
+      "lift_ci95_pp": [
+        -0.22,
+        0.76
+      ]
+    },
+    {
+      "channel": "WHATSAPP",
+      "accounts_reached": 19876,
+      "paid_within_30d_pct": 7.77,
+      "baseline_any_30d_pct": 7.7,
+      "lift_pp": 0.07,
+      "lift_ci95_pp": [
+        -0.3,
+        0.44
+      ]
+    }
+  ],
+  "did": {
+    "groups": [
+      {
+        "grp": "CONTROL_DIGITAL",
+        "period": "PRE",
+        "targeting_rows": 8984,
+        "paid_within_30d_pct": 7.68
+      },
+      {
+        "grp": "CONTROL_DIGITAL",
+        "period": "POST",
+        "targeting_rows": 9116,
+        "paid_within_30d_pct": 7.32
+      },
+      {
+        "grp": "TREATMENT_FIELD",
+        "period": "PRE",
+        "targeting_rows": 2783,
+        "paid_within_30d_pct": 7.22
+      },
+      {
+        "grp": "TREATMENT_FIELD",
+        "period": "POST",
+        "targeting_rows": 2816,
+        "paid_within_30d_pct": 8.2
+      }
+    ],
+    "estimate_pp": 1.34,
+    "ci95_pp": [
+      -0.25,
+      2.93
+    ],
+    "note": "Rows are targeting events, not independent accounts, so the interval is if anything too narrow. An interval that includes 0 means no detectable effect."
+  }
 }
