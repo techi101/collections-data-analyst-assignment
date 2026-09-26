@@ -2,7 +2,7 @@
   "monthly_metrics": [
     {
       "month": "2026-01",
-      "total_recovery_inr": 187229127.59000003,
+      "total_recovery_inr": 187229127.59,
       "total_recovery_cr": 18.72,
       "payments": 2464,
       "accounts_paying": 2374,
@@ -18,7 +18,7 @@
     },
     {
       "month": "2026-02",
-      "total_recovery_inr": 170142453.76000005,
+      "total_recovery_inr": 170142453.76,
       "total_recovery_cr": 17.01,
       "payments": 2268,
       "accounts_paying": 2173,
@@ -50,7 +50,7 @@
     },
     {
       "month": "2026-04",
-      "total_recovery_inr": 175138043.40999964,
+      "total_recovery_inr": 175138043.41,
       "total_recovery_cr": 17.51,
       "payments": 2406,
       "accounts_paying": 2304,
@@ -66,7 +66,7 @@
     },
     {
       "month": "2026-05",
-      "total_recovery_inr": 184250278.50000012,
+      "total_recovery_inr": 184250278.5,
       "total_recovery_cr": 18.43,
       "payments": 2449,
       "accounts_paying": 2344,
@@ -82,7 +82,7 @@
     },
     {
       "month": "2026-06",
-      "total_recovery_inr": 175559726.97000012,
+      "total_recovery_inr": 175559726.97,
       "total_recovery_cr": 17.56,
       "payments": 2366,
       "accounts_paying": 2286,
@@ -98,7 +98,7 @@
     },
     {
       "month": "2026-07",
-      "total_recovery_inr": 187242265.0799997,
+      "total_recovery_inr": 187242265.08,
       "total_recovery_cr": 18.72,
       "payments": 2441,
       "accounts_paying": 2335,

@@ -52,7 +52,7 @@ hours_m AS (
 )
 SELECT
     r.month,
-    r.total_recovery_inr,
+    ROUND(r.total_recovery_inr, 2) AS total_recovery_inr,
     ROUND(r.total_recovery_inr / 1e7, 2) AS total_recovery_cr,
     r.payments,
     r.accounts_paying,
