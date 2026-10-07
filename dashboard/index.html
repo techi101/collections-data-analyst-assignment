@@ -1,26 +1,55 @@
 <!DOCTYPE html>
+<!--
+WHAT THIS FILE IS: the one-page leadership dashboard (a web page you open in a browser).
+Analogy: a car's dashboard. It does not run the engine (run_pipeline.py does that); it only shows the few
+numbers the driver needs, big and clear.
+Real example: the top chip says the +11% is one month, not a trend: recovery was Rs 18.72 Cr in January and
+Rs 18.72 Cr in July. The first chart compares January recovery after removing duplicate payment_id rows
+(Rs 18.72 Cr) with the raw total that still holds the duplicates (Rs 19.11 Cr).
+It shows ONLY the corrected September 2026 numbers (see CORRECTIONS.md). The key fix: duplicates are found by
+payment_id, not payment_reference, because one reference number can belong to different accounts, so dropping
+"repeated" references deleted real payments and made a fake decline.
+Important: every number is typed into this file by hand. The page does not read dashboard/data.json, so after a
+pipeline change the numbers here must be updated by hand.
+Overall flow: head (fonts, Chart.js, styles), then header and verdict chip, alert banner, 5 KPI cards,
+2 charts, monthly table + forensics list + recommendation, then the script that draws the charts and fills the table.
+-->
 <html lang="en">
+<!-- head = information about the page that is not shown as content: character set, title, fonts, libraries, styles. -->
 <head>
+    <!-- charset UTF-8 = how letters are stored, so symbols like the rupee sign show correctly. -->
     <meta charset="UTF-8">
+    <!-- viewport = fit the page to phone screens instead of showing a zoomed-out desktop page. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- title = the text on the browser tab. -->
     <title>Collections Analytics — CEO Dashboard</title>
+    <!-- Load the Inter font (weights 300 to 800) from Google Fonts. -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Load Chart.js version 4.4.0 from a CDN (content delivery network = a fast public file server). Chart.js draws the bar and line charts. -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- The style block holds all the CSS for this page (the separate style.css file is not used). -->
     <style>
+        /* :root holds the colour variables (names that start with two dashes), reused below as var(name). */
         :root {
+            /* Page background, a slightly lighter surface, the card colour, and a faint white border (6% opacity). */
             --bg: #080e1a;
             --surface: #0f1829;
             --card: #131f33;
             --border: rgba(255,255,255,0.06);
+            /* Signal colours: red = bad, amber = caution, green = good, blue and purple = neutral highlights. */
             --red: #f04255;
             --amber: #f59e0b;
             --green: #10b981;
             --blue: #3b82f6;
             --purple: #8b5cf6;
+            /* Text colour (near white) and muted text colour (grey). */
             --text: #e2e8f0;
             --muted: #64748b;
         }
+        /* Reset for every element (* = all): no default margins or padding, and box-sizing: border-box so padding and */
+        /* border are counted inside an element's width instead of being added to it. */
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        /* Whole page: Inter font, dark background, light text, at least one full screen tall (100vh), inner padding. */
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg);
@@ -30,6 +59,7 @@
         }
 
         /* ─── HEADER ─────────────────── */
+        /* Header row: title on the left, verdict chip on the right (flex + space-between), a thin line below. */
         .header {
             display: flex;
             justify-content: space-between;
@@ -38,17 +68,20 @@
             padding-bottom: 20px;
             border-bottom: 1px solid var(--border);
         }
+        /* Page title: big, bold, white, letters slightly tighter. */
         .header-left h1 {
             font-size: 1.6rem;
             font-weight: 700;
             color: #fff;
             letter-spacing: -0.02em;
         }
+        /* Line under the title: small muted text. */
         .header-left p {
             color: var(--muted);
             font-size: 0.85rem;
             margin-top: 4px;
         }
+        /* Verdict chip = the small boxed message at the top right: dot and text side by side, rounded, tinted red by default. */
         .verdict-chip {
             display: flex;
             align-items: center;
@@ -58,20 +91,24 @@
             border-radius: 8px;
             padding: 10px 18px;
         }
+        /* The dot inside the chip (border-radius 50% turns a square into a circle); it pulses with the animation below. */
         .verdict-chip .dot {
             width: 10px; height: 10px;
             background: var(--red);
             border-radius: 50%;
             animation: pulse 1.5s infinite;
         }
+        /* pulse animation: fully visible at the start and end (0%, 100%), 30% visible halfway; it repeats every 1.5 s. */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+        /* Chip text: the main line (span) bold red; the second line (small) muted and on its own line. */
         .verdict-chip span { font-size: 0.9rem; font-weight: 600; color: var(--red); }
         .verdict-chip small { font-size: 0.75rem; color: var(--muted); display: block; margin-top: 1px; }
 
         /* ─── ALERT BANNER ─────────────── */
+        /* Alert banner: a tinted box with a thick coloured left edge, rounded on the right side only. */
         .alert {
             background: rgba(240,66,85,0.08);
             border-left: 3px solid var(--red);
@@ -81,21 +118,25 @@
             font-size: 0.9rem;
             line-height: 1.6;
         }
+        /* Bold words in the alert are red by default (the HTML below overrides this with amber). */
         .alert strong { color: var(--red); }
 
         /* ─── KPI GRID ─────────────────── */
+        /* KPI = key performance indicator (a headline number). 5 equal columns of KPI cards, with gaps. */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 14px;
             margin-bottom: 24px;
         }
+        /* One KPI card: card colour, faint border, rounded corners, padding. */
         .kpi {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 18px 16px;
         }
+        /* KPI label: tiny, muted, uppercase text above the number. */
         .kpi .label {
             font-size: 0.7rem;
             color: var(--muted);
@@ -103,16 +144,19 @@
             letter-spacing: 0.07em;
             margin-bottom: 8px;
         }
+        /* KPI value: the big bold number. */
         .kpi .value {
             font-size: 1.7rem;
             font-weight: 700;
             letter-spacing: -0.02em;
         }
+        /* KPI sub-line: a small muted note under the number. */
         .kpi .sub {
             font-size: 0.72rem;
             margin-top: 4px;
             color: var(--muted);
         }
+        /* Badge: a small coloured pill inside the sub-line (inline-block lets it have padding). */
         .kpi .sub .badge {
             display: inline-block;
             padding: 2px 6px;
@@ -120,32 +164,38 @@
             font-weight: 600;
             font-size: 0.7rem;
         }
+        /* Badge colours: bad = red, good = green, neutral = amber (coloured text with a 15% tint behind it). */
         .badge.bad { background: rgba(240,66,85,0.15); color: var(--red); }
         .badge.good { background: rgba(16,185,129,0.15); color: var(--green); }
         .badge.neutral { background: rgba(245,158,11,0.15); color: var(--amber); }
+        /* A coloured 3px top edge for each KPI card, picked by its accent class. */
         .kpi.accent-red { border-top: 3px solid var(--red); }
         .kpi.accent-green { border-top: 3px solid var(--green); }
         .kpi.accent-amber { border-top: 3px solid var(--amber); }
         .kpi.accent-blue { border-top: 3px solid var(--blue); }
         .kpi.accent-purple { border-top: 3px solid var(--purple); }
+        /* Colour of the big number, picked by a class on the value element. */
         .value.red { color: var(--red); }
         .value.green { color: var(--green); }
         .value.amber { color: var(--amber); }
         .value.blue { color: var(--blue); }
 
         /* ─── MAIN CHARTS ROW ──────────── */
+        /* Main charts row: 2 columns, the left one twice as wide (2fr 1fr). */
         .charts-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 14px;
             margin-bottom: 14px;
         }
+        /* Chart card: the panel around each chart, table or list. */
         .chart-card {
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
         }
+        /* Panel heading: small, bold, uppercase, muted. */
         .chart-card h3 {
             font-size: 0.8rem;
             font-weight: 600;
@@ -154,9 +204,11 @@
             color: var(--muted);
             margin-bottom: 16px;
         }
+        /* Chart box: a fixed 220px height; position: relative lets Chart.js size its canvas to this box. */
         .chart-wrap { position: relative; height: 220px; }
 
         /* ─── BOTTOM ROW ───────────────── */
+        /* Bottom row: 3 columns (table, forensics list, recommendation), the last one a bit wider (1.4fr). */
         .bottom-grid {
             display: grid;
             grid-template-columns: 1fr 1fr 1.4fr;
@@ -164,11 +216,13 @@
         }
 
         /* ─── METRICS TABLE ─────────────── */
+        /* Monthly table: full width, single shared borders between cells (border-collapse), small text. */
         .metrics-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.78rem;
         }
+        /* Header cells: left-aligned, muted, with a line underneath. */
         .metrics-table th {
             text-align: left;
             color: var(--muted);
@@ -176,22 +230,27 @@
             padding: 0 0 8px;
             border-bottom: 1px solid var(--border);
         }
+        /* Body cells: padding and a very faint line between rows. */
         .metrics-table td {
             padding: 8px 0;
             border-bottom: 1px solid rgba(255,255,255,0.03);
             color: var(--text);
         }
+        /* Cells with class "right" align their text to the right, so numbers line up. */
         .metrics-table td.right { text-align: right; }
+        /* Trend arrows: ::after adds content after the element's text: an up arrow (green) or a down arrow (red). */
         .trend-arrow.up::after { content: '↑'; color: var(--green); }
         .trend-arrow.down::after { content: '↓'; color: var(--red); }
 
         /* ─── RECOMMENDATION BOX ────────── */
+        /* Recommendation box: a faint green-to-blue gradient, green border, rounded corners, padding. */
         .recommendation {
             background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06));
             border: 1px solid rgba(16,185,129,0.25);
             border-radius: 12px;
             padding: 20px;
         }
+        /* Its small uppercase heading. */
         .recommendation h3 {
             font-size: 0.75rem;
             color: var(--muted);
@@ -199,23 +258,29 @@
             letter-spacing: 0.07em;
             margin-bottom: 12px;
         }
+        /* The headline recommendation line, in bold green. */
         .rec-title {
             font-size: 1.15rem;
             font-weight: 700;
             color: var(--green);
             margin-bottom: 12px;
         }
+        /* The recommendation rows are stacked top to bottom (flex column) with gaps. */
         .rec-rows { display: flex; flex-direction: column; gap: 8px; }
+        /* Each row: the key on the left, the value on the right. */
         .rec-row {
             display: flex;
             justify-content: space-between;
             font-size: 0.78rem;
         }
+        /* Key text muted (rk), value text bold (rv). */
         .rec-row .rk { color: var(--muted); }
         .rec-row .rv { font-weight: 600; color: var(--text); }
 
         /* ─── FORENSICS ROW ─────────────── */
+        /* Forensics list: no bullet points, items stacked with gaps. */
         .forensics-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        /* Each item: icon and text side by side, lined up at the top. */
         .forensics-list li {
             display: flex;
             align-items: flex-start;
@@ -223,13 +288,17 @@
             font-size: 0.78rem;
             line-height: 1.4;
         }
+        /* The coloured circle icon: fixed size, never shrinks. */
         .forensics-list .icon {
             font-size: 0.9rem;
             flex-shrink: 0;
             margin-top: 1px;
         }
+        /* Item title in the normal text colour; the sub-line smaller and muted. */
         .forensics-list .fi-text { color: var(--text); }
         .forensics-list .fi-sub { font-size: 0.7rem; color: var(--muted); }
+            /* Media query: the rules inside apply only when the screen is at most 760px wide (phones). There every grid */
+            /* becomes one column, the page padding shrinks and the header stacks; !important makes these win over the rules above. */
             @media (max-width: 760px) {
             body { padding: 16px; }
             .header { flex-direction: column; gap: 12px; }
@@ -238,17 +307,21 @@
         }
 </style>
 </head>
+<!-- body = everything visible on the page. All numbers below are typed in by hand from the pipeline outputs. -->
 <body>
 
 <!-- HEADER -->
+<!-- Header: title and a description of the data on the left, the verdict chip on the right. -->
 <div class="header">
     <div class="header-left">
         <h1>Collections Analytics — Leadership Brief</h1>
         <p>7 months of data (Jan–Jul 2026) · 30,000 accounts · one row per payment_id · revised Sep 2026 (see CORRECTIONS.md)</p>
     </div>
+    <!-- Verdict chip. The style attribute on the element overrides the default red with amber (amber = caution, not alarm). -->
     <div class="verdict-chip" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.35)">
         <div class="dot" style="background:var(--amber)"></div>
         <div>
+            <!-- The verdict: March's +11% is one month; recovery was Rs 18.72 Cr in both January and July. -->
             <span style="color:var(--amber)">+11% is one month, not a trend</span>
             <small>Recovery flat: ₹18.72 Cr in Jan and in Jul</small>
         </div>
@@ -256,6 +329,7 @@
 </div>
 
 <!-- ALERT -->
+<!-- Alert banner with the corrected story: March +11.0% after February fell 9.1%; Feb to Jul average +0.3%; real duplicates small (325 rows, Rs 2.45 Cr). -->
 <div class="alert" style="border-left-color:var(--amber);background:rgba(245,158,11,0.08)">
     <strong style="color:var(--amber)">March was +11.0% on February, but February was −9.1% on January.</strong>
     Month-on-month changes from February to July average <strong style="color:var(--amber)">+0.3%</strong>.
@@ -264,27 +338,33 @@
 </div>
 
 <!-- KPI ROW -->
+<!-- 5 KPI cards. Each card = label (what it is), value (the number), sub (context). -->
 <div class="kpi-grid">
+    <!-- KPI 1: the average month-on-month change from February to July is +0.3%, against the reported +11% (March only). -->
     <div class="kpi accent-amber">
         <div class="label">Avg MoM change, Feb–Jul</div>
         <div class="value amber">+0.3%</div>
         <div class="sub"><span class="badge neutral">Reported: +11% (March only)</span></div>
     </div>
+    <!-- KPI 2: total Jan to Jul recovery Rs 126.8 Cr (18.72 + 17.01 + 18.89 + 17.51 + 18.43 + 17.56 + 18.72), after removing payment_id duplicates. -->
     <div class="kpi accent-blue">
         <div class="label">Total Recovery (Jan–Jul)</div>
         <div class="value blue">₹126.8 Cr</div>
         <div class="sub">After removing ₹2.45 Cr of duplicates</div>
     </div>
+    <!-- KPI 3: paying accounts divided by the whole portfolio of 30,000: 7.8% in July, 7.2% to 8.1% every month. -->
     <div class="kpi accent-blue">
         <div class="label">Accounts paying / portfolio</div>
         <div class="value blue">7.8%</div>
         <div class="sub">July · range 7.2–8.1% <span class="badge neutral">Flat</span></div>
     </div>
+    <!-- KPI 4: right-party contact rate (files 04 and 05), 76% to 79% every month. -->
     <div class="kpi accent-blue">
         <div class="label">Right-party contact</div>
         <div class="value blue">76–79%</div>
         <div class="sub">of dispositioned calls <span class="badge neutral">Flat</span></div>
     </div>
+    <!-- KPI 5: channel lift against the baseline is about 0, and every 95% confidence interval includes zero (file 06 and run_pipeline.py). -->
     <div class="kpi accent-amber">
         <div class="label">Channel lift vs baseline</div>
         <div class="value amber">≈ 0</div>
@@ -293,13 +373,16 @@
 </div>
 
 <!-- MAIN CHARTS -->
+<!-- Two chart panels side by side. A canvas element is a blank drawing area; the script below draws a chart into it, found by its id. -->
 <div class="charts-grid">
+    <!-- Left: monthly recovery after dedup on payment_id (bars) against the raw total with duplicates (dashed line). -->
     <div class="chart-card">
         <h3>Monthly Recovery — deduplicated by payment_id vs raw (₹ Crores)</h3>
         <div class="chart-wrap">
             <canvas id="recoveryChart"></canvas>
         </div>
     </div>
+    <!-- Right: last-touch credit per channel (file 06). The Rs 80.8 Cr with no contact (64%) is in the title, not drawn as a bar. -->
     <div class="chart-card">
         <h3>Last-touch credit, 30-day window (₹ Cr) · plus ₹80.8 Cr (64%) with no contact</h3>
         <div class="chart-wrap">
@@ -309,7 +392,9 @@
 </div>
 
 <!-- BOTTOM CHARTS -->
+<!-- Bottom row: monthly table, forensics list, recommendation. -->
 <div class="bottom-grid">
+    <!-- Monthly table: the header row is written here; the body rows are added by the script loop into the tbody with id metricsTable. -->
     <div class="chart-card">
         <h3>Metric Trend (Jan–Jul 2026)</h3>
         <table class="metrics-table">
@@ -324,53 +409,78 @@
             <tbody id="metricsTable"></tbody>
         </table>
     </div>
+    <!-- Forensics list: one item per data problem found, with the corrected numbers. -->
     <div class="chart-card">
         <h3>Data Forensics — Issues Found</h3>
         <ul class="forensics-list">
+            <!-- Duplicates: the key is payment_id. payment_reference is NOT a key: 3,407 references are shared by different accounts, so dropping them deleted real payments (the August trap). -->
             <li><span class="icon">🟡</span><div><div class="fi-text">Duplicate payments (by payment_id)</div><div class="fi-sub">325 successful rows · ₹2.45 Cr (~1.9%). payment_reference is NOT a key: 3,407 are reused across accounts</div></div></li>
+            <!-- Self-cure: 63.8% of payments had no contact in the 30 days before them (file 06). -->
             <li><span class="icon">🔴</span><div><div class="fi-text">Self-cure credited to campaigns</div><div class="fi-sub">63.8% of payments had no contact in the prior 30 days</div></div></li>
+            <!-- Time zones: calls stored in UTC, IST and Dubai time in equal thirds; file 03 converts them to UTC. -->
             <li><span class="icon">🔴</span><div><div class="fi-text">Timezone mismatch (91k calls)</div><div class="fi-sub">UTC / IST / Dubai in equal thirds — normalised to UTC</div></div></li>
+            <!-- Two promise codes, PTP and PROMISE_TO_PAY: counting one misses 3,926 of 7,830 (file 04). -->
             <li><span class="icon">🔴</span><div><div class="fi-text">Two PTP codes in every schema version</div><div class="fi-sub">Counting one misses ~50% of promises (3,926 of 7,830)</div></div></li>
+            <!-- Agent master data: codes and names change from row to row for all 1,000 agent_ids (file 02). -->
             <li><span class="icon">🟡</span><div><div class="fi-text">Agent master data unreliable</div><div class="fi-sub">Employee code and name change per row for all 1,000 agent_ids</div></div></li>
+            <!-- Denominator: only 462 of January's 2,374 payers were in the targeting list, so the whole portfolio is used instead (file 05). -->
             <li><span class="icon">🟡</span><div><div class="fi-text">Denominator mismatch</div><div class="fi-sub">Only 462 of January's 2,374 payers were in that month's targeting list</div></div></li>
         </ul>
     </div>
+    <!-- Recommendation box for the Rs 10 Cr question: test first, because no channel shows measurable lift. -->
     <div class="recommendation">
         <h3>₹10 Cr Recommendation</h3>
         <div class="rec-title">→ Test before committing: no channel shows measurable lift</div>
         <div class="rec-rows">
+            <!-- Step 1: a randomised holdout test (a random share of accounts gets no contact, so any difference can be credited to the channel). -->
             <div class="rec-row"><span class="rk">Step 1 (proposed ≤ ₹1.5 Cr)</span><span class="rv">8-week randomised holdout, 20% per channel</span></div>
+            <!-- Detectable lift about 1.3 pp = the smallest effect the test is sized to catch (80% power = 80% chance to catch a real effect that big; 5% level = 5% risk of a false alarm). -->
             <div class="rec-row"><span class="rk">Detectable lift</span><span class="rv">≈ 1.3 pp (80% power, 5% level)</span></div>
+            <!-- Step 2: fix the data at the source. Step 3: spend the rest on whatever the test proves works. -->
             <div class="rec-row"><span class="rk">Step 2 (proposed ≤ ₹1.5 Cr)</span><span class="rv">Fix data at source: payment_id, one PTP code, UTC, agent master</span></div>
             <div class="rec-row"><span class="rk">Step 3 (≥ ₹7 Cr)</span><span class="rv">Deploy to the channel the test proves, by lift per rupee</span></div>
+            <!-- Why not WhatsApp: it has the most last-touch credit only because it sends the most messages; its lift is +0.07 pp. -->
             <div class="rec-row"><span class="rk">Why not WhatsApp now?</span><span class="rv">Most credit only because it sends the most messages; lift +0.07 pp</span></div>
+            <!-- April shift: DiD +1.3 pp with a 95% CI from minus 0.2 to plus 2.9 (file 08), so no detectable effect. -->
             <div class="rec-row"><span class="rk">April strategy shift</span><span class="rv">DiD +1.3 pp, 95% CI −0.2 to +2.9: no detectable effect</span></div>
+            <!-- More agents: recovery per agent-hour is flat (Rs 16.1k to 17.0k, file 05). -->
             <div class="rec-row"><span class="rk">Why not more agents?</span><span class="rv">₹/agent-hour flat (₹16.1k–17.0k); contact shows no lift</span></div>
         </div>
     </div>
 </div>
 
+<!-- The script: JavaScript that draws the two charts and fills the table. It runs once when the page loads. -->
 <script>
 // ─── DATA (from run_pipeline.py → golden_metrics.csv, results/) ─────
+// months = the x-axis labels. const = a name whose value is never reassigned.
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+// cleanRecovery = monthly recovery in Rs Cr after keeping one row per payment_id (golden_metrics.csv).
 const cleanRecovery = [18.72, 17.01, 18.89, 17.51, 18.43, 17.56, 18.72];
+// rawRecovery = the same months BEFORE removing payment_id duplicates. The gap is about Rs 0.3 to 0.4 Cr a month
+// (about 1.9%, spread evenly), so duplicates cannot explain the March jump.
 const rawRecovery   = [19.11, 17.41, 19.32, 17.84, 18.70, 17.87, 19.03];
 
+// Monthly table columns: paying-account rate %, PTP kept rate %, recovery per agent-hour in rupees (golden_metrics.csv).
 const recRate     = [7.91, 7.24, 8.06, 7.68, 7.81, 7.62, 7.78];
 const ptpKept     = [24.1, 25.5, 24.7, 25.2, 25.3, 24.7, 24.6];
 const recPerHour  = [16773, 16117, 16972, 16491, 17008, 16403, 16748];
 
+// Channel chart: last-touch credit in Rs Cr per channel (results/channel_attribution.csv). NO_CONTACT_30D is left out.
 const channels    = ['WhatsApp', 'Field', 'SMS', 'Voice'];
 const channelVals = [16.95, 10.93, 9.94, 8.19];
 
+// Shared chart colours: GRID = faint white grid lines, TICK = grey axis text.
 const GRID = 'rgba(255,255,255,0.05)';
 const TICK = '#64748b';
 
 // ─── RECOVERY CHART ──────────────────────────────────────────
+// new Chart(canvas, settings) draws a chart into the canvas with id "recoveryChart". It mixes bars and a line.
 new Chart(document.getElementById('recoveryChart'), {
+    // data = the x-axis labels plus a list of datasets (one dataset per series).
     data: {
         labels: months,
         datasets: [
+            // Dataset 1: blue bars = deduplicated recovery. yAxisID 'y' = use the y-axis named y.
             {
                 type: 'bar',
                 label: 'Deduplicated by payment_id',
@@ -381,6 +491,7 @@ new Chart(document.getElementById('recoveryChart'), {
                 borderRadius: 4,
                 yAxisID: 'y'
             },
+            // Dataset 2: dashed red line = raw recovery (borderDash [5,3] = 5px dash, 3px gap; tension 0.3 = a slightly curved line).
             {
                 type: 'line',
                 label: 'Raw (includes ~1.9% duplicates)',
@@ -396,12 +507,16 @@ new Chart(document.getElementById('recoveryChart'), {
             }
         ]
     },
+    // options: responsive = resize with the window; maintainAspectRatio false = fill the fixed-height box.
     options: {
         responsive: true, maintainAspectRatio: false,
+        // plugins: legend text colour and size; the tooltip shows the hovered value as "Rs X.XX Cr" (with the rupee sign).
+        // ctx => ... is an arrow function (a short way to write a function): it takes ctx (the hovered point) and returns the text.
         plugins: {
             legend: { labels: { color: TICK, font: { size: 11 } } },
             tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.y.toFixed(2)} Cr` } }
         },
+        // scales: the y-axis gets faint grid lines, rupee labels and an axis title; the x-axis has no grid lines.
         scales: {
             y: {
                 grid: { color: GRID },
@@ -414,10 +529,12 @@ new Chart(document.getElementById('recoveryChart'), {
 });
 
 // ─── CHANNEL CHART ────────────────────────────────────────────
+// Channel chart: a bar chart in the canvas "channelChart".
 new Chart(document.getElementById('channelChart'), {
     type: 'bar',
     data: {
         labels: channels,
+        // One dataset: the 4 channel values, all 4 bars in the same blue.
         datasets: [{
             data: channelVals,
             backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)', 'rgba(59,130,246,0.6)'],
@@ -425,13 +542,16 @@ new Chart(document.getElementById('channelChart'), {
             borderWidth: 0
         }]
     },
+    // indexAxis 'y' = horizontal bars (channels on the y-axis, rupees on the x-axis).
     options: {
         indexAxis: 'y',
         responsive: true, maintainAspectRatio: false,
+        // No legend (there is only one series); the tooltip shows the value as Rs X.XX Cr (parsed.x because the bars lie flat).
         plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: ctx => ` ₹${ctx.parsed.x.toFixed(2)} Cr` } }
         },
+        // x-axis: faint grid, ticks labelled with the rupee sign; y-axis: no grid.
         scales: {
             x: { grid: { color: GRID }, ticks: { color: TICK, callback: v => `₹${v}` } },
             y: { grid: { display: false }, ticks: { color: TICK } }
@@ -440,10 +560,17 @@ new Chart(document.getElementById('channelChart'), {
 });
 
 // ─── METRICS TABLE ────────────────────────────────────────────
+// tbody = the empty table body in the HTML, found by its id "metricsTable".
 const tbody = document.getElementById('metricsTable');
+// Loop i = 0 to 6: one table row per month.
 for (let i = 0; i < months.length; i++) {
+    // prev = true from February on (January has no earlier month to compare with).
     const prev = i > 0;
+    // rDir = arrow for the paying rate: 'down' if it fell since last month, 'up' if it rose or stayed equal, '' (no arrow)
+    // for January. a ? b : c means "if a then b, else c".
     const rDir = prev && recRate[i] < recRate[i-1] ? 'down' : (prev ? 'up' : '');
+    // Add one row of HTML to the table. The backtick text is a template literal: each ${...} drops a value into the text.
+    // toFixed(1) = 1 decimal; recPerHour / 1000 shows rupees in thousands, e.g. 16773 becomes 16.8k.
     tbody.innerHTML += `
         <tr>
             <td>${months[i]}</td>

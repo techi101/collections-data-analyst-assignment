@@ -1,42 +1,67 @@
+/* WHAT THIS FILE IS: a style sheet. CSS (Cascading Style Sheets) = the rules for colours, sizes and layout. */
+/* Analogy: if the HTML is the skeleton of a page, the CSS is its clothes and paint. */
+/* Real example: the rule ".metric-card.negative .value" would paint a metric card's big number red. */
+/* IMPORTANT: dashboard/index.html does NOT load this file. It has no link to style.css and keeps its own styles */
+/* inside its style block, and class names used here (.takeaway-card, .metrics-grid, .recommendation-card) do not */
+/* appear in it. So these rules do not change the live dashboard; the file is left over from the first commit. */
+/* Overall flow: colour variables in :root, then page layout (body, container), header, cards and chart box. */
+/* */
+/* :root = the top element of the page. Variables defined here (names starting with two dashes) can be reused */
+/* below as var(name), so a colour is changed in one place only. */
 :root {
+    /* Dark navy page background and a slightly lighter card background (hex colour codes like #0f172a). */
     --bg-dark: #0f172a;
     --card-bg: #1e293b;
+    /* Main text almost white; muted text grey-blue, for labels. */
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    /* Accent colours: red for bad news, green for good news, blue for neutral highlights. */
     --accent-red: #ef4444;
     --accent-green: #10b981;
     --accent-blue: #3b82f6;
 }
 
+/* body = the whole visible page. */
 body {
+    /* Font: Inter if available, else the system font (-apple-system), else any sans-serif font. */
     font-family: 'Inter', -apple-system, sans-serif;
+    /* Background and text colour come from the variables above. */
     background-color: var(--bg-dark);
     color: var(--text-main);
+    /* margin 0 removes the browser's default outer gap; padding 2rem adds inner space (1rem = the base font size). */
     margin: 0;
     padding: 2rem;
+    /* display: flex + justify-content: center = put the dashboard box in the middle of the page, left to right. */
     display: flex;
     justify-content: center;
 }
 
+/* The box that holds the whole dashboard: at most 1000px wide, otherwise the full width (small screens). */
 .dashboard-container {
     max-width: 1000px;
     width: 100%;
 }
 
+/* Main title (an h1 inside .header): large text with a little space below. */
 .header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
+    /* Gradient text trick: paint a blue left-to-right gradient as the background, clip it to the letter shapes */
+    /* (-webkit-background-clip: text) and make the letters themselves transparent, so the gradient shows through. */
     background: linear-gradient(90deg, #60a5fa, #3b82f6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
+/* Subtitle under the title: muted colour, slightly larger than normal text, space below. */
 .header .subtitle {
     color: var(--text-muted);
     font-size: 1.2rem;
     margin-bottom: 2rem;
 }
 
+/* Takeaway card (the key-message box): dark red-to-navy gradient (145deg = the direction of the gradient), */
+/* thin dark red border, inner padding, rounded corners (border-radius 12px) and space below. */
 .takeaway-card {
     background: linear-gradient(145deg, #3f1d1d, #1e293b);
     border: 1px solid #7f1d1d;
@@ -45,16 +70,19 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Heading inside the takeaway card: light red, no gap above. */
 .takeaway-card h2 {
     color: #fca5a5;
     margin-top: 0;
 }
 
+/* Paragraph text inside the takeaway card: a bit larger, with comfortable line spacing (1.6 x the font size). */
 .takeaway-card p {
     font-size: 1.1rem;
     line-height: 1.6;
 }
 
+/* Metrics grid: a CSS grid with 3 equal columns (repeat(3, 1fr); 1fr = one share of the free space) and gaps. */
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -62,14 +90,17 @@ body {
     margin-bottom: 2rem;
 }
 
+/* One metric card: card background, padding, rounded corners, centred text. */
 .metric-card {
     background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
     text-align: center;
+    /* box-shadow: a soft shadow 4px below the card (rgba = red, green, blue and transparency, here 0.1). */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Card title: small, muted, UPPERCASE, with a little extra space between the letters. */
 .metric-card h3 {
     margin: 0;
     color: var(--text-muted);
@@ -78,37 +109,45 @@ body {
     letter-spacing: 0.05em;
 }
 
+/* The big number on a card: 2.5 x the font size, bold, a small gap above and below. */
 .metric-card .value {
     font-size: 2.5rem;
     font-weight: bold;
     margin: 0.5rem 0;
 }
 
+/* Colour the big number by meaning: .negative = red, .neutral = grey, .positive = green. */
+/* ".metric-card.negative" (no space between) = an element that has BOTH classes. */
 .metric-card.negative .value { color: var(--accent-red); }
 .metric-card.neutral .value { color: var(--text-muted); }
 .metric-card.positive .value { color: var(--accent-green); }
 
+/* Small label text under the number. */
 .metric-card .label {
     font-size: 0.85rem;
     color: var(--text-muted);
 }
 
+/* Recommendation card: card background, more padding, rounded corners. */
 .recommendation-card {
     background-color: var(--card-bg);
     padding: 2rem;
     border-radius: 12px;
 }
 
+/* Its heading: blue, no gap above. */
 .recommendation-card h2 {
     margin-top: 0;
     color: #60a5fa;
 }
 
+/* Chart container: a fixed 300px-tall box (charts need a fixed height), with space above and below. */
 .chart-container {
     height: 300px;
     margin: 2rem 0;
 }
 
+/* Rationale text: larger, airy line spacing, light grey. */
 .rationale {
     font-size: 1.1rem;
     line-height: 1.6;
